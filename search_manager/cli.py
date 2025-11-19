@@ -63,6 +63,8 @@ def main():
         print("  search ilm <policy> set cold-after <days>       - Set cold phase for a policy")
         print("  search ilm <policy> set rollover <size> <docs>  - Set rollover thresholds (use 'none' to skip)")
         print("  search index delete <index-name>                - Delete an index")
+        print("  search dashboard list                           - List all dashboards and visualizations")
+        print("  search dashboard export [id1 id2 ...]           - Export dashboards/visualizations to ndjson")
         sys.exit(1)
     
     target = None
@@ -133,6 +135,25 @@ def main():
         index_name = args[2]
         result = functions.delete_index(cfg, index_name, target)
         print(json.dumps(result, indent=2))
+        return
+    
+    if len(args) >= 2 and args[0] == "dashboard" and args[1] == "list":
+        cfg = load_config()
+        results = functions.list_dashboards(cfg, target)
+        if isinstance(results, dict) and "error" in results:
+            print(json.dumps(results, indent=2))
+        else:
+            functions.print_saved_objects(results)
+        return
+    
+    if len(args) >= 2 and args[0] == "dashboard" and args[1] == "export":
+        cfg = load_config()
+        obj_ids = args[2:] if len(args) > 2 else None
+        result = functions.export_saved_objects(cfg, target, obj_ids)
+        if isinstance(result, dict) and "error" in result:
+            print(json.dumps(result, indent=2))
+        else:
+            print(result)
         return
     
     endpoint = resolve_endpoint(args)

@@ -407,3 +407,150 @@ def print_table(results):
             f"{color}{(r['delete_at'] or '-').ljust(col_widths[7])}{reset}"
         ]
         print("  ".join(row))
+
+
+def list_dashboards(config, target=None, obj_type=None):
+    """List dashboards and visualizations from OpenSearch Dashboards."""
+    from .cli import get_server
+    
+    server, _ = get_server(config, target)
+    base_url = f"{server['protocol']}://{server['host']}"
+    
+    # Query saved objects
+    resp = requests.get(f"{base_url}/.kibana/_search?size=1000")
+    if resp.status_code != 200:
+        return {"error": f"Failed to fetch saved objects: {resp.status_code}"}
+    
+    data = resp.json()
+    results = []
+    
+    for hit in data['hits']['hits']:
+        source = hit['_source']
+        hit_type = source.get('type', 'unknown')
+        
+        # Filter by type if specified
+        if obj_type and hit_type != obj_type:
+            continue
+        
+        # Only show dashboards and visualizations
+        if hit_type not in ['dashboard', 'visualization']:
+            continue
+        
+        obj_data = source.get(hit_type, {})
+        title = obj_data.get('title', 'N/A')
+        obj_id = hit['_id']
+        
+        results.append({
+            'type': hit_type,
+            'id': obj_id,
+            'title': title
+        })
+    
+    return results
+
+
+def print_saved_objects(results):
+    """Print saved objects (dashboards/visualizations) as a table."""
+    if not results:
+        print("No objects found")
+        return
+    
+    # Calculate column widths
+    type_width = max(len(r['type']) for r in results) if results else 4
+    type_width = max(type_width, len('Type'))
+    id_width = max(len(r['id']) for r in results) if results else 2
+    id_width = max(id_width, len('ID'))
+    title_width = max(len(r['title']) for r in results) if results else 5
+    title_width = max(title_width, len('Title'))
+    
+    # Print header
+    header = f"{'Type'.ljust(type_width)}  {'ID'.ljust(id_width)}  {'Title'.ljust(title_width)}"
+    print(header)
+    print("-" * len(header))
+    
+    # Print rows
+    for r in results:
+        print(f"{r['type'].ljust(type_width)}  {r['id'].ljust(id_width)}  {r['title'].ljust(title_width)}")
+
+
+def export_saved_objects(config, target=None, obj_ids=None, obj_type=None):
+    """Export saved objects (dashboards/visualizations) to ndjson format with index-pattern mapping."""
+    from .cli import get_server
+    
+    server, _ = get_server(config, target)
+    base_url = f"{server['protocol']}://{server['host']}"
+    
+    # Query saved objects
+    resp = requests.get(f"{base_url}/.kibana/_search?size=1000")
+    if resp.status_code != 200:
+        return {"error": f"Failed to fetch saved objects: {resp.status_code}"}
+    
+    data = resp.json()
+    
+    # Build index-pattern mapping (ID -> title/name)
+    index_pattern_map = {}
+    for hit in data['hits']['hits']:
+        source = hit['_source']
+        if source.get('type') == 'index-pattern':
+            full_id = hit['_id']
+            obj_id = full_id.split(':', 1)[1] if ':' in full_id else full_id
+            title = source.get('index-pattern', {}).get('title')
+            if title:
+                index_pattern_map[obj_id] = title
+    
+    ndjson_lines = []
+    
+    # Add index-pattern mapping as first line (metadata)
+    ndjson_lines.append(json.dumps({"_index_pattern_map": index_pattern_map}))
+    
+    for hit in data['hits']['hits']:
+        source = hit['_source']
+        hit_type = source.get('type', 'unknown')
+        full_id = hit['_id']
+        
+        # Extract ID (remove type prefix like "dashboard:")
+        obj_id = full_id.split(':', 1)[1] if ':' in full_id else full_id
+        
+        # Filter by type if specified
+        if obj_type and hit_type != obj_type:
+            continue
+        
+        # Filter by IDs if specified
+        if obj_ids and obj_id not in obj_ids:
+            continue
+        
+        # Only export dashboards and visualizations
+        if hit_type not in ['dashboard', 'visualization']:
+            continue
+        
+        # Build export object in ndjson format
+        obj = {
+            'id': obj_id,
+            'type': hit_type,
+            'attributes': source[hit_type]
+        }
+        
+        # Sanitize: remove filters and queries from searchSourceJSON
+        if 'kibanaSavedObjectMeta' in obj['attributes']:
+            meta = obj['attributes']['kibanaSavedObjectMeta']
+            if 'searchSourceJSON' in meta:
+                try:
+                    search_source = json.loads(meta['searchSourceJSON'])
+                    # Remove query and filter
+                    if 'query' in search_source:
+                        # Keep the structure but clear the query string
+                        if isinstance(search_source['query'], dict):
+                            search_source['query']['query'] = ''
+                    if 'filter' in search_source:
+                        search_source['filter'] = []
+                    meta['searchSourceJSON'] = json.dumps(search_source)
+                except:
+                    pass
+        
+        # Include references if present (preserves index-pattern IDs)
+        if 'references' in source:
+            obj['references'] = source['references']
+        
+        ndjson_lines.append(json.dumps(obj))
+    
+    return '\n'.join(ndjson_lines)
