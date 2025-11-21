@@ -53,7 +53,7 @@ def query(endpoint, target=None):
         print(response.text)
 
 def main():
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 2 or sys.argv[1] in ["-h", "--help"]:
         print("Usage: search <command> [args] or search <endpoint>")
         print("       search -t|--target <name> <command> [args]")
         print("\nCustom commands:")
@@ -63,9 +63,13 @@ def main():
         print("  search ilm <policy> set cold-after <days>       - Set cold phase for a policy")
         print("  search ilm <policy> set rollover <size> <docs>  - Set rollover thresholds (use 'none' to skip)")
         print("  search index delete <index-name>                - Delete an index")
+        print("  search index-pattern list                       - List all index patterns with IDs")
+        print("  search index-pattern delete <pattern-id>        - Delete an index pattern")
         print("  search dashboard list                           - List all dashboards and visualizations")
+        print("  search dashboard delete <id>                    - Delete a dashboard or visualization")
         print("  search dashboard export [id1 id2 ...]           - Export dashboards/visualizations to ndjson")
-        sys.exit(1)
+        print("  search dashboard import <file.ndjson>           - Import dashboards/visualizations from ndjson")
+        sys.exit(0 if len(sys.argv) > 1 else 1)
     
     target = None
     args = sys.argv[1:]
@@ -137,6 +141,25 @@ def main():
         print(json.dumps(result, indent=2))
         return
     
+    if len(args) >= 2 and args[0] == "index-pattern" and args[1] == "list":
+        cfg = load_config()
+        results = functions.list_index_patterns(cfg, target)
+        if isinstance(results, dict) and "error" in results:
+            print(json.dumps(results, indent=2))
+        else:
+            functions.print_index_patterns(results)
+        return
+    
+    if len(args) >= 3 and args[0] == "index-pattern" and args[1] == "delete":
+        if len(args) < 3:
+            print("Usage: search index-pattern delete <pattern-id>")
+            sys.exit(1)
+        cfg = load_config()
+        pattern_id = args[2]
+        result = functions.delete_index_pattern(cfg, pattern_id, target)
+        print(json.dumps(result, indent=2))
+        return
+    
     if len(args) >= 2 and args[0] == "dashboard" and args[1] == "list":
         cfg = load_config()
         results = functions.list_dashboards(cfg, target)
@@ -144,6 +167,16 @@ def main():
             print(json.dumps(results, indent=2))
         else:
             functions.print_saved_objects(results)
+        return
+    
+    if len(args) >= 3 and args[0] == "dashboard" and args[1] == "delete":
+        if len(args) < 3:
+            print("Usage: search dashboard delete <id>")
+            sys.exit(1)
+        cfg = load_config()
+        obj_id = args[2]
+        result = functions.delete_dashboard(cfg, obj_id, target)
+        print(json.dumps(result, indent=2))
         return
     
     if len(args) >= 2 and args[0] == "dashboard" and args[1] == "export":
@@ -154,6 +187,15 @@ def main():
             print(json.dumps(result, indent=2))
         else:
             print(result)
+        return
+    
+    if len(args) >= 3 and args[0] == "dashboard" and args[1] == "import":
+        cfg = load_config()
+        filepath = args[2]
+        with open(filepath, 'r') as f:
+            ndjson_content = f.read()
+        result = functions.import_saved_objects(cfg, ndjson_content, target)
+        print(json.dumps(result, indent=2))
         return
     
     endpoint = resolve_endpoint(args)

@@ -240,6 +240,50 @@ def delete_index(config, index_name, target=None):
         return {"error": delete_resp.text}
 
 
+def delete_index_pattern(config, pattern_id, target=None):
+    """Delete an index pattern from .kibana."""
+    from .cli import get_server
+    
+    server, _ = get_server(config, target)
+    base_url = f"{server['protocol']}://{server['host']}"
+    
+    # Delete the index pattern document
+    delete_resp = requests.delete(f"{base_url}/.kibana/_doc/index-pattern:{pattern_id}")
+    
+    if delete_resp.status_code == 200:
+        return {
+            "success": True,
+            "pattern_id": pattern_id,
+            "message": f"Index pattern '{pattern_id}' deleted successfully"
+        }
+    elif delete_resp.status_code == 404:
+        return {"error": f"Index pattern '{pattern_id}' not found"}
+    else:
+        return {"error": delete_resp.text}
+
+
+def delete_dashboard(config, obj_id, target=None):
+    """Delete a dashboard or visualization from .kibana."""
+    from .cli import get_server
+    
+    server, _ = get_server(config, target)
+    base_url = f"{server['protocol']}://{server['host']}"
+    
+    # Delete the saved object document
+    delete_resp = requests.delete(f"{base_url}/.kibana/_doc/{obj_id}")
+    
+    if delete_resp.status_code == 200:
+        return {
+            "success": True,
+            "id": obj_id,
+            "message": f"Dashboard/visualization '{obj_id}' deleted successfully"
+        }
+    elif delete_resp.status_code == 404:
+        return {"error": f"Dashboard/visualization '{obj_id}' not found"}
+    else:
+        return {"error": delete_resp.text}
+
+
 def get_index_lifecycle_info(config, target=None, show_all=False):
     """Get ILM info for all indices with their lifecycle timelines."""
     from .cli import get_server
@@ -449,6 +493,40 @@ def list_dashboards(config, target=None, obj_type=None):
     return results
 
 
+def list_index_patterns(config, target=None):
+    """List all index patterns from .kibana index."""
+    from .cli import get_server
+    
+    server, _ = get_server(config, target)
+    base_url = f"{server['protocol']}://{server['host']}"
+    
+    resp = requests.get(f"{base_url}/.kibana/_search?size=1000")
+    if resp.status_code != 200:
+        return {"error": f"Failed to fetch saved objects: {resp.status_code}"}
+    
+    data = resp.json()
+    results = []
+    
+    for hit in data['hits']['hits']:
+        source = hit['_source']
+        hit_type = source.get('type', 'unknown')
+        
+        # Only show index-patterns
+        if hit_type != 'index-pattern':
+            continue
+        
+        obj_data = source.get('index-pattern', {})
+        title = obj_data.get('title', 'N/A')
+        obj_id = hit['_id']
+        
+        results.append({
+            'id': obj_id,
+            'title': title
+        })
+    
+    return results
+
+
 def print_saved_objects(results):
     """Print saved objects (dashboards/visualizations) as a table."""
     if not results:
@@ -471,6 +549,28 @@ def print_saved_objects(results):
     # Print rows
     for r in results:
         print(f"{r['type'].ljust(type_width)}  {r['id'].ljust(id_width)}  {r['title'].ljust(title_width)}")
+
+
+def print_index_patterns(results):
+    """Print index patterns as a table."""
+    if not results:
+        print("No index patterns found")
+        return
+    
+    # Calculate column widths
+    id_width = max(len(r['id']) for r in results) if results else 2
+    id_width = max(id_width, len('ID'))
+    title_width = max(len(r['title']) for r in results) if results else 5
+    title_width = max(title_width, len('Title'))
+    
+    # Print header
+    header = f"{'ID'.ljust(id_width)}  {'Title'.ljust(title_width)}"
+    print(header)
+    print("-" * len(header))
+    
+    # Print rows
+    for r in results:
+        print(f"{r['id'].ljust(id_width)}  {r['title'].ljust(title_width)}")
 
 
 def export_saved_objects(config, target=None, obj_ids=None, obj_type=None):
@@ -554,3 +654,51 @@ def export_saved_objects(config, target=None, obj_ids=None, obj_type=None):
         ndjson_lines.append(json.dumps(obj))
     
     return '\n'.join(ndjson_lines)
+
+
+def import_saved_objects(config, ndjson_content, target=None):
+    """Import saved objects from ndjson directly to .kibana index."""
+    from .cli import get_server
+    
+    server, _ = get_server(config, target)
+    base_url = f"{server['protocol']}://{server['host']}"
+    
+    lines = ndjson_content.strip().split('\n')
+    
+    imported = []
+    skipped = []
+    
+    for line in lines:
+        if not line.strip():
+            continue
+        
+        obj = json.loads(line)
+        
+        # Skip metadata lines
+        if '_index_pattern_map' in obj:
+            continue
+        
+        # Build document for .kibana index
+        doc = {
+            obj['type']: obj['attributes'],
+            'type': obj['type']
+        }
+        if 'references' in obj:
+            doc['references'] = obj['references']
+        
+        # Import by writing directly to .kibana index
+        import_resp = requests.put(
+            f"{base_url}/.kibana/_doc/{obj['type']}:{obj['id']}",
+            headers={"Content-Type": "application/json"},
+            json=doc
+        )
+        
+        imported.append({
+            'id': obj['id'],
+            'type': obj['type'],
+            'title': obj.get('attributes', {}).get('title', 'N/A'),
+            'status': import_resp.status_code,
+            'success': import_resp.status_code in [200, 201]
+        })
+    
+    return {'imported': imported, 'skipped': skipped}
