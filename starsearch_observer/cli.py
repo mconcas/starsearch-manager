@@ -130,21 +130,31 @@ def main():
     if len(sys.argv) < 2 or sys.argv[1] in ["-h", "--help"]:
         print("Usage: observe-cli <command> [args] or observe-cli <endpoint>")
         print("       observe-cli -t|--target <name> <command> [args]")
-        print("\nCustom commands:")
-        print("  observe-cli ilm info [--all]                         - Show ILM policy info for indices (--all includes unmanaged)")
+        print("       observe-cli -v|--version")
+        print("\nObject Management:")
+        print("  observe-cli dashboard list                           - List all dashboards")
+        print("  observe-cli dashboard export [id1 id2 ...]           - Export dashboards to ndjson")
+        print("  observe-cli dashboard import <file.ndjson>           - Import dashboards from ndjson")
+        print("  observe-cli dashboard delete <id>                    - Delete a dashboard")
+        print("")
+        print("  observe-cli visualization list                       - List all visualizations")
+        print("  observe-cli visualization export [id1 id2 ...]       - Export visualizations to ndjson")
+        print("  observe-cli visualization import <file.ndjson>       - Import visualizations from ndjson")
+        print("  observe-cli visualization delete <id>                - Delete a visualization")
+        print("")
+        print("  observe-cli search list                              - List all saved searches")
+        print("  observe-cli search export [id1 id2 ...]              - Export searches to ndjson")
+        print("  observe-cli search import <file.ndjson>              - Import searches from ndjson")
+        print("  observe-cli search delete <id>                       - Delete a search")
+        print("\nOther Commands:")
+        print("  observe-cli ilm info [--all]                         - Show ILM policy info for indices")
         print("  observe-cli ilm <policy> set delete-after <days>     - Set delete phase for a policy")
         print("  observe-cli ilm <policy> set warm-after <days>       - Set warm phase for a policy")
         print("  observe-cli ilm <policy> set cold-after <days>       - Set cold phase for a policy")
-        print("  observe-cli ilm <policy> set rollover <size> <docs>  - Set rollover thresholds (use 'none' to skip)")
+        print("  observe-cli ilm <policy> set rollover <size> <docs>  - Set rollover thresholds")
         print("  observe-cli index delete <index-name>                - Delete an index")
-        print("  observe-cli index-pattern list                       - List all index patterns with IDs")
+        print("  observe-cli index-pattern list                       - List all index patterns")
         print("  observe-cli index-pattern delete <pattern-id>        - Delete an index pattern")
-        print("  observe-cli dashboard list                           - List all dashboards and visualizations")
-        print("  observe-cli dashboard delete <id>                    - Delete a dashboard or visualization")
-        print("  observe-cli dashboard export [id1 id2 ...]           - Export dashboards/visualizations/searches to ndjson")
-        print("  observe-cli dashboard import <file.ndjson>           - Import dashboards/visualizations/searches from ndjson")
-        print("  observe-cli search list                              - List all saved searches")
-        print("  observe-cli search delete <id>                       - Delete a saved search")
         sys.exit(0 if len(sys.argv) > 1 else 1)
     
     target = None
@@ -157,9 +167,118 @@ def main():
         target = args[1]
         args = args[2:]
     
-    # Check for custom functions
+    cfg = load_config()
+    
+    # Dashboard commands
+    if len(args) >= 2 and args[0] == "dashboard":
+        if args[1] == "list":
+            results = functions.list_dashboards(cfg, target, obj_type="dashboard")
+            if isinstance(results, dict) and "error" in results:
+                print(json.dumps(results, indent=2))
+            else:
+                functions.print_saved_objects(results)
+            return
+        elif args[1] == "export":
+            obj_ids = args[2:] if len(args) > 2 else None
+            result = functions.export_saved_objects(cfg, target, obj_ids, obj_type="dashboard")
+            if isinstance(result, dict) and "error" in result:
+                print(json.dumps(result, indent=2))
+            else:
+                print(result)
+            return
+        elif args[1] == "import":
+            if len(args) < 3:
+                print("Usage: observe-cli dashboard import <file.ndjson>")
+                sys.exit(1)
+            filepath = args[2]
+            with open(filepath, 'r') as f:
+                ndjson_content = f.read()
+            result = functions.import_saved_objects(cfg, ndjson_content, target, obj_type="dashboard")
+            print(json.dumps(result, indent=2))
+            return
+        elif args[1] == "delete":
+            if len(args) < 3:
+                print("Usage: observe-cli dashboard delete <id>")
+                sys.exit(1)
+            obj_id = args[2]
+            result = functions.delete_saved_object(cfg, obj_id, "dashboard", target)
+            print(json.dumps(result, indent=2))
+            return
+    
+    # Visualization commands
+    if len(args) >= 2 and args[0] == "visualization":
+        if args[1] == "list":
+            results = functions.list_dashboards(cfg, target, obj_type="visualization")
+            if isinstance(results, dict) and "error" in results:
+                print(json.dumps(results, indent=2))
+            else:
+                functions.print_saved_objects(results)
+            return
+        elif args[1] == "export":
+            obj_ids = args[2:] if len(args) > 2 else None
+            result = functions.export_saved_objects(cfg, target, obj_ids, obj_type="visualization")
+            if isinstance(result, dict) and "error" in result:
+                print(json.dumps(result, indent=2))
+            else:
+                print(result)
+            return
+        elif args[1] == "import":
+            if len(args) < 3:
+                print("Usage: observe-cli visualization import <file.ndjson>")
+                sys.exit(1)
+            filepath = args[2]
+            with open(filepath, 'r') as f:
+                ndjson_content = f.read()
+            result = functions.import_saved_objects(cfg, ndjson_content, target, obj_type="visualization")
+            print(json.dumps(result, indent=2))
+            return
+        elif args[1] == "delete":
+            if len(args) < 3:
+                print("Usage: observe-cli visualization delete <id>")
+                sys.exit(1)
+            obj_id = args[2]
+            result = functions.delete_saved_object(cfg, obj_id, "visualization", target)
+            print(json.dumps(result, indent=2))
+            return
+    
+    # Search commands
+    if len(args) >= 2 and args[0] == "search":
+        if args[1] == "list":
+            results = functions.list_saved_searches(cfg, target)
+            if isinstance(results, dict) and "error" in results:
+                print(json.dumps(results, indent=2))
+            else:
+                functions.print_index_patterns(results)
+            return
+        elif args[1] == "export":
+            obj_ids = args[2:] if len(args) > 2 else None
+            result = functions.export_saved_objects(cfg, target, obj_ids, obj_type="search")
+            if isinstance(result, dict) and "error" in result:
+                print(json.dumps(result, indent=2))
+            else:
+                print(result)
+            return
+        elif args[1] == "import":
+            if len(args) < 3:
+                print("Usage: observe-cli search import <file.ndjson>")
+                sys.exit(1)
+            filepath = args[2]
+            with open(filepath, 'r') as f:
+                ndjson_content = f.read()
+            result = functions.import_saved_objects(cfg, ndjson_content, target, obj_type="search")
+            print(json.dumps(result, indent=2))
+            return
+        elif args[1] == "delete":
+            if len(args) < 3:
+                print("Usage: observe-cli search delete <id>")
+                sys.exit(1)
+            search_id = args[2]
+            result = functions.delete_saved_object(cfg, search_id, "search", target)
+            print(json.dumps(result, indent=2))
+            return
+    
+    # ILM commands
     if len(args) >= 2 and args[0] == "ilm" and args[1] == "info":
-        cfg = load_config()
         show_all = "--all" in args or "--all" in sys.argv
         results = functions.get_index_lifecycle_info(cfg, target, show_all)
         functions.print_table(results)
@@ -168,14 +287,12 @@ def main():
     if len(args) >= 4 and args[0] == "ilm" and args[2] == "set":
         phase_arg = args[3] if len(args) > 3 else None
         
-        # Handle rollover separately
         if phase_arg == "rollover":
             if len(args) < 6:
                 print("Usage: observe-cli ilm <policy> set rollover <max_size> <max_docs>")
                 print("  max_size: e.g., '50gb', '10gb'")
                 print("  max_docs: e.g., '150000000' or 'none'")
                 sys.exit(1)
-            cfg = load_config()
             policy_name = args[1]
             max_size = args[4] if args[4].lower() != "none" else None
             max_docs = args[5] if args[5].lower() != "none" else None
@@ -189,7 +306,6 @@ def main():
         if len(args) < 5:
             print(f"Usage: observe-cli ilm <policy> set {phase_arg} <days>")
             sys.exit(1)
-        cfg = load_config()
         policy_name = args[1]
         try:
             days = int(args[4])
@@ -207,92 +323,32 @@ def main():
         print(json.dumps(result, indent=2))
         return
     
+    # Index commands
     if len(args) >= 3 and args[0] == "index" and args[1] == "delete":
-        if len(args) < 3:
-            print("Usage: observe-cli index delete <index-name>")
-            sys.exit(1)
-        cfg = load_config()
         index_name = args[2]
         result = functions.delete_index(cfg, index_name, target)
         print(json.dumps(result, indent=2))
         return
     
-    if len(args) >= 2 and args[0] == "index-pattern" and args[1] == "list":
-        cfg = load_config()
-        results = functions.list_index_patterns(cfg, target)
-        if isinstance(results, dict) and "error" in results:
-            print(json.dumps(results, indent=2))
-        else:
-            functions.print_index_patterns(results)
-        return
-    
-    if len(args) >= 3 and args[0] == "index-pattern" and args[1] == "delete":
-        if len(args) < 3:
-            print("Usage: observe-cli index-pattern delete <pattern-id>")
-            sys.exit(1)
-        cfg = load_config()
-        pattern_id = args[2]
-        result = functions.delete_index_pattern(cfg, pattern_id, target)
-        print(json.dumps(result, indent=2))
-        return
-    
-    if len(args) >= 2 and args[0] == "dashboard" and args[1] == "list":
-        cfg = load_config()
-        results = functions.list_dashboards(cfg, target)
-        if isinstance(results, dict) and "error" in results:
-            print(json.dumps(results, indent=2))
-        else:
-            functions.print_saved_objects(results)
-        return
-    
-    if len(args) >= 2 and args[0] == "search" and args[1] == "list":
-        cfg = load_config()
-        results = functions.list_saved_searches(cfg, target)
-        if isinstance(results, dict) and "error" in results:
-            print(json.dumps(results, indent=2))
-        else:
-            functions.print_index_patterns(results)
-        return
-    
-    if len(args) >= 3 and args[0] == "search" and args[1] == "delete":
-        if len(args) < 3:
-            print("Usage: observe-cli search delete <id>")
-            sys.exit(1)
-        cfg = load_config()
-        search_id = args[2]
-        result = functions.delete_saved_search(cfg, search_id, target)
-        print(json.dumps(result, indent=2))
-        return
-    
-    if len(args) >= 3 and args[0] == "dashboard" and args[1] == "delete":
-        if len(args) < 3:
-            print("Usage: observe-cli dashboard delete <id>")
-            sys.exit(1)
-        cfg = load_config()
-        obj_id = args[2]
-        result = functions.delete_dashboard(cfg, obj_id, target)
-        print(json.dumps(result, indent=2))
-        return
-    
-    if len(args) >= 2 and args[0] == "dashboard" and args[1] == "export":
-        cfg = load_config()
-        obj_ids = args[2:] if len(args) > 2 else None
-        result = functions.export_saved_objects(cfg, target, obj_ids)
-        if isinstance(result, dict) and "error" in result:
+    # Index pattern commands
+    if len(args) >= 2 and args[0] == "index-pattern":
+        if args[1] == "list":
+            results = functions.list_index_patterns(cfg, target)
+            if isinstance(results, dict) and "error" in results:
+                print(json.dumps(results, indent=2))
+            else:
+                functions.print_index_patterns(results)
+            return
+        elif args[1] == "delete":
+            if len(args) < 3:
+                print("Usage: observe-cli index-pattern delete <pattern-id>")
+                sys.exit(1)
+            pattern_id = args[2]
+            result = functions.delete_index_pattern(cfg, pattern_id, target)
             print(json.dumps(result, indent=2))
-        else:
-            print(result)
-        return
+            return
     
-    if len(args) >= 3 and args[0] == "dashboard" and args[1] == "import":
-        cfg = load_config()
-        filepath = args[2]
-        with open(filepath, 'r') as f:
-            ndjson_content = f.read()
-        result = functions.import_saved_objects(cfg, ndjson_content, target)
-        print(json.dumps(result, indent=2))
-        return
-    
+    # Fallback to endpoint query
     endpoint = resolve_endpoint(args)
     query(endpoint, target)
 

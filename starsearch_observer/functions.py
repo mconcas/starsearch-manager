@@ -744,6 +744,124 @@ def delete_saved_search(config, search_id, target=None):
             return {"error": delete_resp.text}
 
 
+
+
+def delete_saved_object(config, obj_id, obj_type, target=None):
+    """Delete a saved object (dashboard, visualization, or search) from .kibana or Dashboards API.
+    
+    Args:
+        config: Configuration dictionary
+        obj_id: ID of the object to delete
+        obj_type: Type of object - "dashboard", "visualization", or "search"
+        target: Optional server name
+    """
+    from .cli import get_server, get_auth, get_verify_ssl, get_base_url, use_dashboards_api
+    
+    server, _ = get_server(config, target)
+    base_url = get_base_url(server)
+    auth = get_auth(server)
+    verify_ssl = get_verify_ssl(server)
+    
+    if use_dashboards_api(server):
+        # Use OpenSearch Dashboards API (requires osd-xsrf header for DELETE)
+        headers = {'osd-xsrf': 'true'}
+        delete_resp = requests.delete(f"{base_url}/api/saved_objects/{obj_type}/{obj_id}", auth=auth, verify=verify_ssl, headers=headers)
+        if delete_resp.status_code == 200:
+            return {
+                "success": True,
+                "id": obj_id,
+                "type": obj_type,
+                "message": f"{obj_type.capitalize()} '{obj_id}' deleted successfully"
+            }
+        elif delete_resp.status_code == 404:
+            return {"error": f"{obj_type.capitalize()} '{obj_id}' not found"}
+        else:
+            return {"error": delete_resp.text}
+    else:
+        # Use direct .kibana index access
+        # Try with type prefix first
+        delete_resp = requests.delete(f"{base_url}/.kibana/_doc/{obj_type}:{obj_id}", auth=auth, verify=verify_ssl)
+        
+        if delete_resp.status_code == 200:
+            return {
+                "success": True,
+                "id": obj_id,
+                "type": obj_type,
+                "message": f"{obj_type.capitalize()} '{obj_id}' deleted successfully"
+            }
+        elif delete_resp.status_code == 404:
+            # Try without prefix
+            delete_resp = requests.delete(f"{base_url}/.kibana/_doc/{obj_id}", auth=auth, verify=verify_ssl)
+            if delete_resp.status_code == 200:
+                return {
+                    "success": True,
+                    "id": obj_id,
+                    "type": obj_type,
+                    "message": f"{obj_type.capitalize()} '{obj_id}' deleted successfully"
+                }
+            return {"error": f"{obj_type.capitalize()} '{obj_id}' not found"}
+        else:
+            return {"error": delete_resp.text}
+
+
+
+def delete_saved_object(config, obj_id, obj_type, target=None):
+    """Delete a saved object (dashboard, visualization, or search) from .kibana or Dashboards API.
+    
+    Args:
+        config: Configuration dictionary
+        obj_id: ID of the object to delete
+        obj_type: Type of object - "dashboard", "visualization", or "search"
+        target: Optional server name
+    """
+    from .cli import get_server, get_auth, get_verify_ssl, get_base_url, use_dashboards_api
+    
+    server, _ = get_server(config, target)
+    base_url = get_base_url(server)
+    auth = get_auth(server)
+    verify_ssl = get_verify_ssl(server)
+    
+    if use_dashboards_api(server):
+        # Use OpenSearch Dashboards API (requires osd-xsrf header for DELETE)
+        headers = {'osd-xsrf': 'true'}
+        delete_resp = requests.delete(f"{base_url}/api/saved_objects/{obj_type}/{obj_id}", auth=auth, verify=verify_ssl, headers=headers)
+        if delete_resp.status_code == 200:
+            return {
+                "success": True,
+                "id": obj_id,
+                "type": obj_type,
+                "message": f"{obj_type.capitalize()} '{obj_id}' deleted successfully"
+            }
+        elif delete_resp.status_code == 404:
+            return {"error": f"{obj_type.capitalize()} '{obj_id}' not found"}
+        else:
+            return {"error": delete_resp.text}
+    else:
+        # Use direct .kibana index access
+        # Try with type prefix first
+        delete_resp = requests.delete(f"{base_url}/.kibana/_doc/{obj_type}:{obj_id}", auth=auth, verify=verify_ssl)
+        
+        if delete_resp.status_code == 200:
+            return {
+                "success": True,
+                "id": obj_id,
+                "type": obj_type,
+                "message": f"{obj_type.capitalize()} '{obj_id}' deleted successfully"
+            }
+        elif delete_resp.status_code == 404:
+            # Try without prefix
+            delete_resp = requests.delete(f"{base_url}/.kibana/_doc/{obj_id}", auth=auth, verify=verify_ssl)
+            if delete_resp.status_code == 200:
+                return {
+                    "success": True,
+                    "id": obj_id,
+                    "type": obj_type,
+                    "message": f"{obj_type.capitalize()} '{obj_id}' deleted successfully"
+                }
+            return {"error": f"{obj_type.capitalize()} '{obj_id}' not found"}
+        else:
+            return {"error": delete_resp.text}
+
 def print_saved_objects(results):
     """Print saved objects (dashboards/visualizations/searches) as a table."""
     if not results:
@@ -920,8 +1038,15 @@ def export_saved_objects(config, target=None, obj_ids=None, obj_type=None):
     return '\n'.join(ndjson_lines)
 
 
-def import_saved_objects(config, ndjson_content, target=None):
-    """Import saved objects from ndjson directly to .kibana index."""
+def import_saved_objects(config, ndjson_content, target=None, obj_type=None):
+    """Import saved objects from ndjson directly to .kibana index.
+    
+    Args:
+        config: Configuration dictionary
+        ndjson_content: NDJSON formatted string with saved objects
+        target: Optional server name
+        obj_type: Optional filter - only import objects of this type
+    """
     from .cli import get_server, get_auth, get_verify_ssl, get_base_url
     
     server, _ = get_server(config, target)
@@ -942,6 +1067,16 @@ def import_saved_objects(config, ndjson_content, target=None):
         
         # Skip metadata lines
         if '_index_pattern_map' in obj:
+            continue
+        
+        # Filter by type if specified
+        if obj_type and obj.get('type') != obj_type:
+            skipped.append({'id': obj.get('id', 'unknown'), 'reason': f"Type mismatch (expected {obj_type}, got {obj.get('type')})"})
+            continue
+        
+        # Filter by type if specified
+        if obj_type and obj.get('type') != obj_type:
+            skipped.append({'id': obj.get('id', 'unknown'), 'reason': f"Type mismatch (expected {obj_type}, got {obj.get('type')})"})
             continue
         
         # Build document for .kibana index
