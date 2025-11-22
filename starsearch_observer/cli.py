@@ -7,7 +7,7 @@ import yaml
 from . import functions
 
 def load_config():
-    config_path = Path.home() / ".search-manager" / "config.json"
+    config_path = Path.home() / ".starsearch" / "config.json"
     with open(config_path) as f:
         return json.load(f)
 
@@ -51,8 +51,23 @@ def get_verify_ssl(server):
     """Get SSL verification setting from server config (default True)."""
     return server.get("verify_ssl", True)
 
+def get_cluster_base_url(server):
+    """Construct base URL for OpenSearch/Elasticsearch cluster API access."""
+    protocol = server['protocol']
+    host = server['host']
+    cluster_path = server.get('cluster_path', '')
+    
+    if cluster_path:
+        # Ensure cluster_path starts with / and doesn't end with /
+        if not cluster_path.startswith('/'):
+            cluster_path = '/' + cluster_path
+        if cluster_path.endswith('/'):
+            cluster_path = cluster_path[:-1]
+        return f"{protocol}://{host}{cluster_path}"
+    return f"{protocol}://{host}"
+
 def get_base_url(server):
-    """Construct base URL from server config including optional base_path."""
+    """Construct base URL from server config including optional base_path (for Dashboards API)."""
     protocol = server['protocol']
     host = server['host']
     base_path = server.get('base_path', '')
@@ -95,7 +110,7 @@ def query(endpoint, target=None):
     if is_default:
         print(f"→ {server['name']}")
     
-    base_url = get_base_url(server)
+    base_url = get_cluster_base_url(server)
     url = f"{base_url}/{endpoint}"
     auth = get_auth(server)
     verify_ssl = get_verify_ssl(server)

@@ -38,10 +38,10 @@ def format_bytes(bytes_val):
 
 def set_policy_delete_phase(config, policy_name, days, target=None):
     """Add or update delete phase in an ILM policy."""
-    from .cli import get_server, get_auth, get_verify_ssl, get_base_url
+    from .cli import get_server, get_auth, get_verify_ssl, get_cluster_base_url
     
     server, _ = get_server(config, target)
-    base_url = get_base_url(server)
+    base_url = get_cluster_base_url(server)
     auth = get_auth(server)
     verify_ssl = get_verify_ssl(server)
     
@@ -86,10 +86,10 @@ def set_policy_delete_phase(config, policy_name, days, target=None):
 
 def set_policy_warm_phase(config, policy_name, days, target=None):
     """Add or update warm phase in an ILM policy."""
-    from .cli import get_server, get_auth, get_verify_ssl, get_base_url
+    from .cli import get_server, get_auth, get_verify_ssl, get_cluster_base_url
     
     server, _ = get_server(config, target)
-    base_url = get_base_url(server)
+    base_url = get_cluster_base_url(server)
     auth = get_auth(server)
     verify_ssl = get_verify_ssl(server)
     
@@ -136,10 +136,10 @@ def set_policy_warm_phase(config, policy_name, days, target=None):
 
 def set_policy_cold_phase(config, policy_name, days, target=None):
     """Add or update cold phase in an ILM policy."""
-    from .cli import get_server, get_auth, get_verify_ssl, get_base_url
+    from .cli import get_server, get_auth, get_verify_ssl, get_cluster_base_url
     
     server, _ = get_server(config, target)
-    base_url = get_base_url(server)
+    base_url = get_cluster_base_url(server)
     auth = get_auth(server)
     verify_ssl = get_verify_ssl(server)
     
@@ -185,11 +185,11 @@ def set_policy_cold_phase(config, policy_name, days, target=None):
 
 
 def set_policy_rollover(config, policy_name, max_size, max_docs, target=None):
-    """Add or update rollover action in hot phase of an ILM policy."""
-    from .cli import get_server, get_auth, get_verify_ssl, get_base_url
+    """Add or update rollover settings in an ILM policy."""
+    from .cli import get_server, get_auth, get_verify_ssl, get_cluster_base_url
     
     server, _ = get_server(config, target)
-    base_url = get_base_url(server)
+    base_url = get_cluster_base_url(server)
     auth = get_auth(server)
     verify_ssl = get_verify_ssl(server)
     
@@ -237,10 +237,10 @@ def set_policy_rollover(config, policy_name, max_size, max_docs, target=None):
 
 def delete_index(config, index_name, target=None):
     """Delete an index."""
-    from .cli import get_server, get_auth, get_verify_ssl, get_base_url
+    from .cli import get_server, get_auth, get_verify_ssl, get_cluster_base_url
     
     server, _ = get_server(config, target)
-    base_url = get_base_url(server)
+    base_url = get_cluster_base_url(server)
     auth = get_auth(server)
     verify_ssl = get_verify_ssl(server)
     
@@ -337,10 +337,10 @@ def delete_dashboard(config, obj_id, target=None):
 
 def get_index_lifecycle_info(config, target=None, show_all=False):
     """Get ILM info for all indices with their lifecycle timelines."""
-    from .cli import get_server, get_auth, get_verify_ssl, get_base_url
+    from .cli import get_server, get_auth, get_verify_ssl, get_cluster_base_url
     
     server, _ = get_server(config, target)
-    base_url = get_base_url(server)
+    base_url = get_cluster_base_url(server)
     auth = get_auth(server)
     verify_ssl = get_verify_ssl(server)
     

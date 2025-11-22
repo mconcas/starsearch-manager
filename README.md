@@ -4,7 +4,7 @@ Comprehensive CLI tool for managing Elasticsearch/OpenSearch clusters and OpenSe
 
 ## Setup
 
-Create `~/.search-manager/config.json` with your cluster details:
+Create `~/.starsearch/config.json` with your cluster details:
 
 ```json
 {
@@ -21,11 +21,18 @@ Create `~/.search-manager/config.json` with your cluster details:
       "username": "admin",
       "password": "your-password",
       "verify_ssl": false,
+      "cluster_path": "/os",
       "base_path": "/dashboards"
     }
   ]
 }
 ```
+
+Configuration options:
+- `cluster_path`: Path prefix for OpenSearch/Elasticsearch cluster API (e.g., `/os`)
+- `base_path`: Path prefix for OpenSearch Dashboards API (e.g., `/dashboards`)
+- `verify_ssl`: Set to `false` to disable SSL certificate verification
+- `username`/`password`: Basic authentication credentials
 
 Install:
 
