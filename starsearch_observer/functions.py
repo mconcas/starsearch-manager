@@ -221,7 +221,9 @@ def set_policy_rollover(config, policy_name, max_size, max_docs, target=None):
     update_resp = requests.put(
         f"{base_url}/_ilm/policy/{policy_name}",
         headers={"Content-Type": "application/json"},
-        data=json.dumps({"policy": policy})
+        data=json.dumps({"policy": policy}),
+        auth=auth,
+        verify=verify_ssl
     )
     
     if update_resp.status_code in [200, 201]:
@@ -286,53 +288,6 @@ def delete_index_pattern(config, pattern_id, target=None):
         return {"error": f"Index pattern '{pattern_id}' not found"}
     else:
         return {"error": delete_resp.text}
-
-
-def delete_dashboard(config, obj_id, target=None):
-    """Delete a dashboard or visualization from .kibana or Dashboards API."""
-    from .cli import get_server, get_auth, get_verify_ssl, get_base_url, use_dashboards_api
-    
-    server, _ = get_server(config, target)
-    base_url = get_base_url(server)
-    auth = get_auth(server)
-    verify_ssl = get_verify_ssl(server)
-    
-    if use_dashboards_api(server):
-        # Use OpenSearch Dashboards API - try both types (requires osd-xsrf header for DELETE)
-        headers = {'osd-xsrf': 'true'}
-        delete_resp = requests.delete(f"{base_url}/api/saved_objects/dashboard/{obj_id}", auth=auth, verify=verify_ssl, headers=headers)
-        if delete_resp.status_code == 200:
-            return {
-                "success": True,
-                "id": obj_id,
-                "message": f"Dashboard '{obj_id}' deleted successfully"
-            }
-        
-        delete_resp = requests.delete(f"{base_url}/api/saved_objects/visualization/{obj_id}", auth=auth, verify=verify_ssl, headers=headers)
-        if delete_resp.status_code == 200:
-            return {
-                "success": True,
-                "id": obj_id,
-                "message": f"Visualization '{obj_id}' deleted successfully"
-            }
-        elif delete_resp.status_code == 404:
-            return {"error": f"Dashboard/visualization '{obj_id}' not found"}
-        else:
-            return {"error": delete_resp.text}
-    else:
-        # Use direct .kibana index access - try to find and delete
-        delete_resp = requests.delete(f"{base_url}/.kibana/_doc/{obj_id}", auth=auth, verify=verify_ssl)
-        
-        if delete_resp.status_code == 200:
-            return {
-                "success": True,
-                "id": obj_id,
-                "message": f"Dashboard/visualization '{obj_id}' deleted successfully"
-            }
-        elif delete_resp.status_code == 404:
-            return {"error": f"Dashboard/visualization '{obj_id}' not found"}
-        else:
-            return {"error": delete_resp.text}
 
 
 def get_index_lifecycle_info(config, target=None, show_all=False):
@@ -696,56 +651,6 @@ def list_saved_searches(config, target=None):
     return results
 
 
-def delete_saved_search(config, search_id, target=None):
-    """Delete a saved search from .kibana or Dashboards API."""
-    from .cli import get_server, get_auth, get_verify_ssl, get_base_url, use_dashboards_api
-    
-    server, _ = get_server(config, target)
-    base_url = get_base_url(server)
-    auth = get_auth(server)
-    verify_ssl = get_verify_ssl(server)
-    
-    if use_dashboards_api(server):
-        # Use OpenSearch Dashboards API (requires osd-xsrf header for DELETE)
-        headers = {'osd-xsrf': 'true'}
-        delete_resp = requests.delete(f"{base_url}/api/saved_objects/search/{search_id}", auth=auth, verify=verify_ssl, headers=headers)
-        if delete_resp.status_code == 200:
-            return {
-                "success": True,
-                "id": search_id,
-                "message": f"Saved search '{search_id}' deleted successfully"
-            }
-        elif delete_resp.status_code == 404:
-            return {"error": f"Saved search '{search_id}' not found"}
-        else:
-            return {"error": delete_resp.text}
-    else:
-        # Use direct .kibana index access
-        # Try with search: prefix first
-        delete_resp = requests.delete(f"{base_url}/.kibana/_doc/search:{search_id}", auth=auth, verify=verify_ssl)
-        
-        if delete_resp.status_code == 200:
-            return {
-                "success": True,
-                "id": search_id,
-                "message": f"Saved search '{search_id}' deleted successfully"
-            }
-        elif delete_resp.status_code == 404:
-            # Try without prefix
-            delete_resp = requests.delete(f"{base_url}/.kibana/_doc/{search_id}", auth=auth, verify=verify_ssl)
-            if delete_resp.status_code == 200:
-                return {
-                    "success": True,
-                    "id": search_id,
-                    "message": f"Saved search '{search_id}' deleted successfully"
-                }
-            return {"error": f"Saved search '{search_id}' not found"}
-        else:
-            return {"error": delete_resp.text}
-
-
-
-
 def delete_saved_object(config, obj_id, obj_type, target=None):
     """Delete a saved object (dashboard, visualization, or search) from .kibana or Dashboards API.
     
@@ -803,64 +708,6 @@ def delete_saved_object(config, obj_id, obj_type, target=None):
         else:
             return {"error": delete_resp.text}
 
-
-
-def delete_saved_object(config, obj_id, obj_type, target=None):
-    """Delete a saved object (dashboard, visualization, or search) from .kibana or Dashboards API.
-    
-    Args:
-        config: Configuration dictionary
-        obj_id: ID of the object to delete
-        obj_type: Type of object - "dashboard", "visualization", or "search"
-        target: Optional server name
-    """
-    from .cli import get_server, get_auth, get_verify_ssl, get_base_url, use_dashboards_api
-    
-    server, _ = get_server(config, target)
-    base_url = get_base_url(server)
-    auth = get_auth(server)
-    verify_ssl = get_verify_ssl(server)
-    
-    if use_dashboards_api(server):
-        # Use OpenSearch Dashboards API (requires osd-xsrf header for DELETE)
-        headers = {'osd-xsrf': 'true'}
-        delete_resp = requests.delete(f"{base_url}/api/saved_objects/{obj_type}/{obj_id}", auth=auth, verify=verify_ssl, headers=headers)
-        if delete_resp.status_code == 200:
-            return {
-                "success": True,
-                "id": obj_id,
-                "type": obj_type,
-                "message": f"{obj_type.capitalize()} '{obj_id}' deleted successfully"
-            }
-        elif delete_resp.status_code == 404:
-            return {"error": f"{obj_type.capitalize()} '{obj_id}' not found"}
-        else:
-            return {"error": delete_resp.text}
-    else:
-        # Use direct .kibana index access
-        # Try with type prefix first
-        delete_resp = requests.delete(f"{base_url}/.kibana/_doc/{obj_type}:{obj_id}", auth=auth, verify=verify_ssl)
-        
-        if delete_resp.status_code == 200:
-            return {
-                "success": True,
-                "id": obj_id,
-                "type": obj_type,
-                "message": f"{obj_type.capitalize()} '{obj_id}' deleted successfully"
-            }
-        elif delete_resp.status_code == 404:
-            # Try without prefix
-            delete_resp = requests.delete(f"{base_url}/.kibana/_doc/{obj_id}", auth=auth, verify=verify_ssl)
-            if delete_resp.status_code == 200:
-                return {
-                    "success": True,
-                    "id": obj_id,
-                    "type": obj_type,
-                    "message": f"{obj_type.capitalize()} '{obj_id}' deleted successfully"
-                }
-            return {"error": f"{obj_type.capitalize()} '{obj_id}' not found"}
-        else:
-            return {"error": delete_resp.text}
 
 def print_saved_objects(results):
     """Print saved objects (dashboards/visualizations/searches) as a table."""
@@ -1067,11 +914,6 @@ def import_saved_objects(config, ndjson_content, target=None, obj_type=None):
         
         # Skip metadata lines
         if '_index_pattern_map' in obj:
-            continue
-        
-        # Filter by type if specified
-        if obj_type and obj.get('type') != obj_type:
-            skipped.append({'id': obj.get('id', 'unknown'), 'reason': f"Type mismatch (expected {obj_type}, got {obj.get('type')})"})
             continue
         
         # Filter by type if specified
