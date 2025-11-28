@@ -179,10 +179,14 @@ def main():
                 functions.print_saved_objects(results)
             return
         elif args[1] == "export":
-            obj_ids = args[2:] if len(args) > 2 else None
+            use_json = "--json" in args
+            obj_ids = [arg for arg in args[2:] if arg != "--json"] if len(args) > 2 else None
             result = functions.export_saved_objects(cfg, target, obj_ids, obj_type="dashboard")
             if isinstance(result, dict) and "error" in result:
                 print(json.dumps(result, indent=2))
+            elif use_json:
+                lines = [json.loads(line) for line in result.strip().split('\n') if line.strip()]
+                print(json.dumps(lines, indent=2))
             else:
                 print(result)
             return
@@ -215,10 +219,14 @@ def main():
                 functions.print_saved_objects(results)
             return
         elif args[1] == "export":
-            obj_ids = args[2:] if len(args) > 2 else None
+            use_json = "--json" in args
+            obj_ids = [arg for arg in args[2:] if arg != "--json"] if len(args) > 2 else None
             result = functions.export_saved_objects(cfg, target, obj_ids, obj_type="visualization")
             if isinstance(result, dict) and "error" in result:
                 print(json.dumps(result, indent=2))
+            elif use_json:
+                lines = [json.loads(line) for line in result.strip().split('\n') if line.strip()]
+                print(json.dumps(lines, indent=2))
             else:
                 print(result)
             return
@@ -251,10 +259,14 @@ def main():
                 functions.print_index_patterns(results)
             return
         elif args[1] == "export":
-            obj_ids = args[2:] if len(args) > 2 else None
+            use_json = "--json" in args
+            obj_ids = [arg for arg in args[2:] if arg != "--json"] if len(args) > 2 else None
             result = functions.export_saved_objects(cfg, target, obj_ids, obj_type="search")
             if isinstance(result, dict) and "error" in result:
                 print(json.dumps(result, indent=2))
+            elif use_json:
+                lines = [json.loads(line) for line in result.strip().split('\n') if line.strip()]
+                print(json.dumps(lines, indent=2))
             else:
                 print(result)
             return
