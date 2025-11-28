@@ -86,6 +86,9 @@ observe-cli dashboard export dashboard-id1 dashboard-id2 > dashboards.ndjson
 # Export all dashboards
 observe-cli dashboard export > all-dashboards.ndjson
 
+# Export as JSON array instead of NDJSON
+observe-cli dashboard export --json > dashboards.json
+
 # Import dashboards from NDJSON file
 observe-cli dashboard import dashboards.ndjson
 
@@ -104,6 +107,9 @@ observe-cli visualization list
 # Export specific visualization(s)
 observe-cli visualization export vis-id1 vis-id2 > visualizations.ndjson
 
+# Export as JSON array instead of NDJSON
+observe-cli visualization export --json > visualizations.json
+
 # Import visualizations
 observe-cli visualization import visualizations.ndjson
 
@@ -118,6 +124,12 @@ Manage saved searches:
 ```bash
 # List all saved searches
 observe-cli search list
+
+# Export saved searches
+observe-cli search export > searches.ndjson
+
+# Export as JSON array instead of NDJSON
+observe-cli search export --json > searches.json
 
 # Export specific search(es)
 observe-cli search export search-id1 search-id2 > searches.ndjson
