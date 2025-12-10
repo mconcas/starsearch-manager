@@ -105,6 +105,116 @@ def resolve_endpoint(args):
     # Fallback: treat as raw endpoint
     return " ".join(args)
 
+def handle_export_output(result, use_json, to_file, output_dir="."):
+    """Handle export output: print to stdout or write to files.
+    
+    Args:
+        result: Export result string (ndjson format)
+        use_json: Whether to format as JSON
+        to_file: Whether to write to files
+        output_dir: Directory to write files to (default: current directory)
+    """
+    if isinstance(result, dict) and "error" in result:
+        print(json.dumps(result, indent=2))
+        return
+    
+    if to_file:
+        output_path = Path(output_dir)
+        output_path.mkdir(parents=True, exist_ok=True)
+        
+        lines = [json.loads(line) for line in result.strip().split('\n') if line.strip()]
+        for line in lines:
+            if '_index_pattern_map' in line:
+                continue
+            obj_id = line['id']
+            ext = '.json' if use_json else '.ndjson'
+            filename = output_path / f"{obj_id}{ext}"
+            with open(filename, 'w') as f:
+                if use_json:
+                    f.write(json.dumps(line, indent=2))
+                else:
+                    f.write(json.dumps(line))
+            print(f"Exported: {filename}")
+    elif use_json:
+        lines = [json.loads(line) for line in result.strip().split('\n') if line.strip()]
+        print(json.dumps(lines, indent=2))
+    else:
+        print(result)
+
+def handle_saved_object_command(args, cfg, target, obj_type):
+    """Generic handler for saved object commands (list/export/import/delete)."""
+    if len(args) < 2:
+        return False
+    
+    subcommand = args[1]
+    
+    if subcommand == "list":
+        # Use appropriate list function based on type
+        results = functions.list_dashboards(cfg, target, obj_type=obj_type)
+        
+        if isinstance(results, dict) and "error" in results:
+            print(json.dumps(results, indent=2))
+        else:
+            functions.print_saved_objects(results)
+        return True
+    
+    elif subcommand == "export":
+        use_json = "--json" in args
+        
+        # Extract --to-file and its optional path
+        to_file = False
+        output_dir = "."
+        filtered_args = []
+        i = 2
+        while i < len(args):
+            if args[i] == "--to-file":
+                to_file = True
+                # Check if next arg is a path (not a flag or object ID with hyphens at start)
+                if i + 1 < len(args) and not args[i + 1].startswith("--"):
+                    # Could be a path - check if it looks like an object ID or a path
+                    next_arg = args[i + 1]
+                    # If it contains / or is ".", treat as path; otherwise might be object ID
+                    if '/' in next_arg or next_arg == '.':
+                        output_dir = next_arg
+                        i += 2
+                        continue
+                i += 1
+            elif args[i] == "--json":
+                i += 1
+            else:
+                filtered_args.append(args[i])
+                i += 1
+        
+        obj_ids = filtered_args if filtered_args else None
+        result = functions.export_saved_objects(cfg, target, obj_ids, obj_type=obj_type)
+        handle_export_output(result, use_json, to_file, output_dir)
+        return True
+    
+    elif subcommand == "import":
+        if len(args) < 3:
+            obj_name = obj_type or "saved-object"
+            print(f"Usage: observe-cli {obj_name} import <file.ndjson>")
+            sys.exit(1)
+        filepath = args[2]
+        with open(filepath, 'r') as f:
+            ndjson_content = f.read()
+        result = functions.import_saved_objects(cfg, ndjson_content, target, obj_type=obj_type)
+        print(json.dumps(result, indent=2))
+        return True
+    
+    elif subcommand == "delete":
+        if obj_type is None:
+            return False  # saved-object doesn't support delete
+        if len(args) < 3:
+            print(f"Usage: observe-cli {obj_type} delete <id>")
+            sys.exit(1)
+        obj_id = args[2]
+        result = functions.delete_saved_object(cfg, obj_id, obj_type, target)
+        print(json.dumps(result, indent=2))
+        return True
+    
+    return False
+
 def query(endpoint, target=None):
     cfg = load_config()
     server, is_default = get_server(cfg, target)
@@ -175,214 +285,22 @@ def main():
     
     # Saved-object commands (type-agnostic)
     if len(args) >= 2 and args[0] == "saved-object":
-        if args[1] == "list":
-            results = functions.list_dashboards(cfg, target, obj_type=None)
-            if isinstance(results, dict) and "error" in results:
-                print(json.dumps(results, indent=2))
-            else:
-                functions.print_saved_objects(results)
-            return
-        elif args[1] == "export":
-            use_json = "--json" in args
-            to_file = "--to-file" in args
-            obj_ids = [arg for arg in args[2:] if arg not in ["--json", "--to-file"]] if len(args) > 2 else None
-            result = functions.export_saved_objects(cfg, target, obj_ids, obj_type=None)
-            if isinstance(result, dict) and "error" in result:
-                print(json.dumps(result, indent=2))
-            elif to_file:
-                lines = [json.loads(line) for line in result.strip().split('\n') if line.strip()]
-                for line in lines:
-                    if '_index_pattern_map' in line:
-                        continue
-                    obj_id = line['id']
-                    ext = '.json' if use_json else '.ndjson'
-                    filename = f"{obj_id}{ext}"
-                    with open(filename, 'w') as f:
-                        if use_json:
-                            f.write(json.dumps(line, indent=2))
-                        else:
-                            f.write(json.dumps(line))
-                    print(f"Exported: {filename}")
-            elif use_json:
-                lines = [json.loads(line) for line in result.strip().split('\n') if line.strip()]
-                print(json.dumps(lines, indent=2))
-            else:
-                print(result)
-            return
-        elif args[1] == "import":
-            if len(args) < 3:
-                print("Usage: observe-cli saved-object import <file.ndjson>")
-                sys.exit(1)
-            filepath = args[2]
-            with open(filepath, 'r') as f:
-                ndjson_content = f.read()
-            result = functions.import_saved_objects(cfg, ndjson_content, target, obj_type=None)
-            print(json.dumps(result, indent=2))
+        if handle_saved_object_command(args, cfg, target, obj_type=None):
             return
     
     # Dashboard commands
     if len(args) >= 2 and args[0] == "dashboard":
-        if args[1] == "list":
-            results = functions.list_dashboards(cfg, target, obj_type="dashboard")
-            if isinstance(results, dict) and "error" in results:
-                print(json.dumps(results, indent=2))
-            else:
-                functions.print_saved_objects(results)
-            return
-        elif args[1] == "export":
-            use_json = "--json" in args
-            to_file = "--to-file" in args
-            obj_ids = [arg for arg in args[2:] if arg not in ["--json", "--to-file"]] if len(args) > 2 else None
-            result = functions.export_saved_objects(cfg, target, obj_ids, obj_type="dashboard")
-            if isinstance(result, dict) and "error" in result:
-                print(json.dumps(result, indent=2))
-            elif to_file:
-                lines = [json.loads(line) for line in result.strip().split('\n') if line.strip()]
-                for line in lines:
-                    if '_index_pattern_map' in line:
-                        continue
-                    obj_id = line['id']
-                    ext = '.json' if use_json else '.ndjson'
-                    filename = f"{obj_id}{ext}"
-                    with open(filename, 'w') as f:
-                        if use_json:
-                            f.write(json.dumps(line, indent=2))
-                        else:
-                            f.write(json.dumps(line))
-                    print(f"Exported: {filename}")
-            elif use_json:
-                lines = [json.loads(line) for line in result.strip().split('\n') if line.strip()]
-                print(json.dumps(lines, indent=2))
-            else:
-                print(result)
-            return
-        elif args[1] == "import":
-            if len(args) < 3:
-                print("Usage: observe-cli dashboard import <file.ndjson>")
-                sys.exit(1)
-            filepath = args[2]
-            with open(filepath, 'r') as f:
-                ndjson_content = f.read()
-            result = functions.import_saved_objects(cfg, ndjson_content, target, obj_type="dashboard")
-            print(json.dumps(result, indent=2))
-            return
-        elif args[1] == "delete":
-            if len(args) < 3:
-                print("Usage: observe-cli dashboard delete <id>")
-                sys.exit(1)
-            obj_id = args[2]
-            result = functions.delete_saved_object(cfg, obj_id, "dashboard", target)
-            print(json.dumps(result, indent=2))
+        if handle_saved_object_command(args, cfg, target, obj_type="dashboard"):
             return
     
     # Visualization commands
     if len(args) >= 2 and args[0] == "visualization":
-        if args[1] == "list":
-            results = functions.list_dashboards(cfg, target, obj_type="visualization")
-            if isinstance(results, dict) and "error" in results:
-                print(json.dumps(results, indent=2))
-            else:
-                functions.print_saved_objects(results)
-            return
-        elif args[1] == "export":
-            use_json = "--json" in args
-            to_file = "--to-file" in args
-            obj_ids = [arg for arg in args[2:] if arg not in ["--json", "--to-file"]] if len(args) > 2 else None
-            result = functions.export_saved_objects(cfg, target, obj_ids, obj_type="visualization")
-            if isinstance(result, dict) and "error" in result:
-                print(json.dumps(result, indent=2))
-            elif to_file:
-                lines = [json.loads(line) for line in result.strip().split('\n') if line.strip()]
-                for line in lines:
-                    if '_index_pattern_map' in line:
-                        continue
-                    obj_id = line['id']
-                    ext = '.json' if use_json else '.ndjson'
-                    filename = f"{obj_id}{ext}"
-                    with open(filename, 'w') as f:
-                        if use_json:
-                            f.write(json.dumps(line, indent=2))
-                        else:
-                            f.write(json.dumps(line))
-                    print(f"Exported: {filename}")
-            elif use_json:
-                lines = [json.loads(line) for line in result.strip().split('\n') if line.strip()]
-                print(json.dumps(lines, indent=2))
-            else:
-                print(result)
-            return
-        elif args[1] == "import":
-            if len(args) < 3:
-                print("Usage: observe-cli visualization import <file.ndjson>")
-                sys.exit(1)
-            filepath = args[2]
-            with open(filepath, 'r') as f:
-                ndjson_content = f.read()
-            result = functions.import_saved_objects(cfg, ndjson_content, target, obj_type="visualization")
-            print(json.dumps(result, indent=2))
-            return
-        elif args[1] == "delete":
-            if len(args) < 3:
-                print("Usage: observe-cli visualization delete <id>")
-                sys.exit(1)
-            obj_id = args[2]
-            result = functions.delete_saved_object(cfg, obj_id, "visualization", target)
-            print(json.dumps(result, indent=2))
+        if handle_saved_object_command(args, cfg, target, obj_type="visualization"):
             return
     
     # Search commands
     if len(args) >= 2 and args[0] == "search":
-        if args[1] == "list":
-            results = functions.list_saved_searches(cfg, target)
-            if isinstance(results, dict) and "error" in results:
-                print(json.dumps(results, indent=2))
-            else:
-                functions.print_index_patterns(results)
-            return
-        elif args[1] == "export":
-            use_json = "--json" in args
-            to_file = "--to-file" in args
-            obj_ids = [arg for arg in args[2:] if arg not in ["--json", "--to-file"]] if len(args) > 2 else None
-            result = functions.export_saved_objects(cfg, target, obj_ids, obj_type="search")
-            if isinstance(result, dict) and "error" in result:
-                print(json.dumps(result, indent=2))
-            elif to_file:
-                lines = [json.loads(line) for line in result.strip().split('\n') if line.strip()]
-                for line in lines:
-                    if '_index_pattern_map' in line:
-                        continue
-                    obj_id = line['id']
-                    ext = '.json' if use_json else '.ndjson'
-                    filename = f"{obj_id}{ext}"
-                    with open(filename, 'w') as f:
-                        if use_json:
-                            f.write(json.dumps(line, indent=2))
-                        else:
-                            f.write(json.dumps(line))
-                    print(f"Exported: {filename}")
-            elif use_json:
-                lines = [json.loads(line) for line in result.strip().split('\n') if line.strip()]
-                print(json.dumps(lines, indent=2))
-            else:
-                print(result)
-            return
-        elif args[1] == "import":
-            if len(args) < 3:
-                print("Usage: observe-cli search import <file.ndjson>")
-                sys.exit(1)
-            filepath = args[2]
-            with open(filepath, 'r') as f:
-                ndjson_content = f.read()
-            result = functions.import_saved_objects(cfg, ndjson_content, target, obj_type="search")
-            print(json.dumps(result, indent=2))
-            return
-        elif args[1] == "delete":
-            if len(args) < 3:
-                print("Usage: observe-cli search delete <id>")
-                sys.exit(1)
-            search_id = args[2]
-            result = functions.delete_saved_object(cfg, search_id, "search", target)
-            print(json.dumps(result, indent=2))
+        if handle_saved_object_command(args, cfg, target, obj_type="search"):
             return
     
     # ILM commands
@@ -445,7 +363,7 @@ def main():
             if isinstance(results, dict) and "error" in results:
                 print(json.dumps(results, indent=2))
             else:
-                functions.print_index_patterns(results)
+                functions.print_saved_objects(results)
             return
         elif args[1] == "delete":
             if len(args) < 3:

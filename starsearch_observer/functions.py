@@ -462,7 +462,7 @@ def print_table(results):
 
 
 def list_dashboards(config, target=None, obj_type=None):
-    """List dashboards and visualizations from .kibana or Dashboards API."""
+    """List saved objects (dashboards, visualizations, searches) from .kibana or Dashboards API."""
     from .cli import get_server, get_auth, get_verify_ssl, get_base_url, use_dashboards_api
     
     server, _ = get_server(config, target)
@@ -475,7 +475,7 @@ def list_dashboards(config, target=None, obj_type=None):
         if obj_type:
             url = f"{base_url}/api/saved_objects/_find?type={obj_type}&per_page=1000"
         else:
-            url = f"{base_url}/api/saved_objects/_find?type=dashboard&type=visualization&per_page=1000"
+            url = f"{base_url}/api/saved_objects/_find?type=dashboard&type=visualization&type=search&per_page=1000"
         
         resp = requests.get(url, auth=auth, verify=verify_ssl)
         if resp.status_code != 200:
@@ -512,7 +512,7 @@ def list_dashboards(config, target=None, obj_type=None):
             if obj_type and hit_type != obj_type:
                 continue
             
-            if hit_type not in ['dashboard', 'visualization']:
+            if hit_type not in ['dashboard', 'visualization', 'search']:
                 continue
             
             obj_data = source.get(hit_type, {})
@@ -591,66 +591,6 @@ def list_index_patterns(config, target=None):
     return results
 
 
-def list_saved_searches(config, target=None):
-    """List all saved searches from .kibana index or Dashboards API."""
-    from .cli import get_server, get_auth, get_verify_ssl, get_base_url, use_dashboards_api
-    
-    server, _ = get_server(config, target)
-    base_url = get_base_url(server)
-    auth = get_auth(server)
-    verify_ssl = get_verify_ssl(server)
-    
-    if use_dashboards_api(server):
-        # Use OpenSearch Dashboards API
-        url = f"{base_url}/api/saved_objects/_find?type=search&per_page=1000"
-        resp = requests.get(url, auth=auth, verify=verify_ssl)
-        if resp.status_code != 200:
-            return {"error": f"Failed to fetch saved searches: {resp.status_code}"}
-        
-        data = resp.json()
-        results = []
-        
-        for obj in data.get('saved_objects', []):
-            obj_id = obj['id']
-            attrs = obj.get('attributes', {})
-            title = attrs.get('title', 'N/A')
-            
-            results.append({
-                'id': obj_id,
-                'title': title
-            })
-    else:
-        # Use direct .kibana index access
-        url = f"{base_url}/.kibana/_search?size=1000"
-        resp = requests.get(url, auth=auth, verify=verify_ssl)
-        if resp.status_code != 200:
-            return {"error": f"Failed to fetch saved searches: {resp.status_code}"}
-        
-        data = resp.json()
-        results = []
-        
-        for hit in data['hits']['hits']:
-            source = hit['_source']
-            hit_type = source.get('type', 'unknown')
-            
-            if hit_type != 'search':
-                continue
-            
-            obj_data = source.get('search', {})
-            title = obj_data.get('title', 'N/A')
-            obj_id = hit['_id']
-            # Remove type prefix if present
-            if ':' in obj_id:
-                obj_id = obj_id.split(':', 1)[1]
-            
-            results.append({
-                'id': obj_id,
-                'title': title
-            })
-    
-    return results
-
-
 def delete_saved_object(config, obj_id, obj_type, target=None):
     """Delete a saved object (dashboard, visualization, or search) from .kibana or Dashboards API.
     
@@ -710,49 +650,46 @@ def delete_saved_object(config, obj_id, obj_type, target=None):
 
 
 def print_saved_objects(results):
-    """Print saved objects (dashboards/visualizations/searches) as a table."""
+    """Print saved objects (dashboards/visualizations/searches/index-patterns) as a table."""
     if not results:
         print("No objects found")
         return
     
-    # Calculate column widths
-    type_width = max(len(r['type']) for r in results) if results else 4
-    type_width = max(type_width, len('Type'))
-    id_width = max(len(r['id']) for r in results) if results else 2
-    id_width = max(id_width, len('ID'))
-    title_width = max(len(r['title']) for r in results) if results else 5
-    title_width = max(title_width, len('Title'))
+    # Check if results have 'type' field (saved objects) or just 'id' and 'title' (index patterns)
+    has_type = results and 'type' in results[0]
     
-    # Print header
-    header = f"{'Type'.ljust(type_width)}  {'ID'.ljust(id_width)}  {'Title'.ljust(title_width)}"
-    print(header)
-    print("-" * len(header))
-    
-    # Print rows
-    for r in results:
-        print(f"{r['type'].ljust(type_width)}  {r['id'].ljust(id_width)}  {r['title'].ljust(title_width)}")
-
-
-def print_index_patterns(results):
-    """Print index patterns as a table."""
-    if not results:
-        print("No index patterns found")
-        return
-    
-    # Calculate column widths
-    id_width = max(len(r['id']) for r in results) if results else 2
-    id_width = max(id_width, len('ID'))
-    title_width = max(len(r['title']) for r in results) if results else 5
-    title_width = max(title_width, len('Title'))
-    
-    # Print header
-    header = f"{'ID'.ljust(id_width)}  {'Title'.ljust(title_width)}"
-    print(header)
-    print("-" * len(header))
-    
-    # Print rows
-    for r in results:
-        print(f"{r['id'].ljust(id_width)}  {r['title'].ljust(title_width)}")
+    if has_type:
+        # Calculate column widths for saved objects
+        type_width = max(len(r['type']) for r in results) if results else 4
+        type_width = max(type_width, len('Type'))
+        id_width = max(len(r['id']) for r in results) if results else 2
+        id_width = max(id_width, len('ID'))
+        title_width = max(len(r['title']) for r in results) if results else 5
+        title_width = max(title_width, len('Title'))
+        
+        # Print header
+        header = f"{'Type'.ljust(type_width)}  {'ID'.ljust(id_width)}  {'Title'.ljust(title_width)}"
+        print(header)
+        print("-" * len(header))
+        
+        # Print rows
+        for r in results:
+            print(f"{r['type'].ljust(type_width)}  {r['id'].ljust(id_width)}  {r['title'].ljust(title_width)}")
+    else:
+        # Calculate column widths for index patterns (no type field)
+        id_width = max(len(r['id']) for r in results) if results else 2
+        id_width = max(id_width, len('ID'))
+        title_width = max(len(r['title']) for r in results) if results else 5
+        title_width = max(title_width, len('Title'))
+        
+        # Print header
+        header = f"{'ID'.ljust(id_width)}  {'Title'.ljust(title_width)}"
+        print(header)
+        print("-" * len(header))
+        
+        # Print rows
+        for r in results:
+            print(f"{r['id'].ljust(id_width)}  {r['title'].ljust(title_width)}")
 
 
 def export_saved_objects(config, target=None, obj_ids=None, obj_type=None):

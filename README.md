@@ -1,4 +1,4 @@
-# StarSearch Observer
+# *search Observer
 
 Comprehensive CLI tool for managing Elasticsearch/OpenSearch clusters and OpenSearch Dashboards.
 
@@ -17,6 +17,8 @@ Comprehensive CLI tool for managing Elasticsearch/OpenSearch clusters and OpenSe
 ## Installation
 
 ```bash
+git clone https://github.com/mconcas/starsearch-manager
+cd starsearch-manager
 pip install -e .
 ```
 
