@@ -11,4 +11,7 @@ dependencies = [
 ]
 
 [project.scripts]
-observe-cli = "starsearch_observer.cli:main"
+starsearch-cli = "starsearch_observer.cli:main"
+
+[tool.setuptools]
+packages = ["starsearch_observer"]

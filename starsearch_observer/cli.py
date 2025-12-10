@@ -193,7 +193,7 @@ def handle_saved_object_command(args, cfg, target, obj_type):
     elif subcommand == "import":
         if len(args) < 3:
             obj_name = obj_type or "saved-object"
-            print(f"Usage: observe-cli {obj_name} import <file.ndjson>")
+            print(f"Usage: starsearch-cli {obj_name} import <file.ndjson>")
             sys.exit(1)
         filepath = args[2]
         with open(filepath, 'r') as f:
@@ -206,7 +206,7 @@ def handle_saved_object_command(args, cfg, target, obj_type):
         if obj_type is None:
             return False  # saved-object doesn't support delete
         if len(args) < 3:
-            print(f"Usage: observe-cli {obj_type} delete <id>")
+            print(f"Usage: starsearch-cli {obj_type} delete <id>")
             sys.exit(1)
         obj_id = args[2]
         result = functions.delete_saved_object(cfg, obj_id, obj_type, target)
@@ -234,41 +234,41 @@ def query(endpoint, target=None):
 
 def main():
     if len(sys.argv) > 1 and sys.argv[1] in ["-v", "--version"]:
-        print(f"observe-cli version {VERSION}")
+        print(f"starsearch-cli version {VERSION}")
         sys.exit(0)
     
     if len(sys.argv) < 2 or sys.argv[1] in ["-h", "--help"]:
-        print("Usage: observe-cli <command> [args] or observe-cli <endpoint>")
-        print("       observe-cli -t|--target <name> <command> [args]")
-        print("       observe-cli -v|--version")
+        print("Usage: starsearch-cli <command> [args] or starsearch-cli <endpoint>")
+        print("       starsearch-cli -t|--target <name> <command> [args]")
+        print("       starsearch-cli -v|--version")
         print("\nObject Management:")
-        print("  observe-cli saved-object list                        - List all saved objects")
-        print("  observe-cli saved-object export [id1 id2 ...] [--json] - Export all saved objects")
-        print("  observe-cli saved-object import <file.ndjson>        - Import saved objects from ndjson")
+        print("  starsearch-cli saved-object list                        - List all saved objects")
+        print("  starsearch-cli saved-object export [id1 id2 ...] [--json] - Export all saved objects")
+        print("  starsearch-cli saved-object import <file.ndjson>        - Import saved objects from ndjson")
         print("")
-        print("  observe-cli dashboard list                           - List all dashboards")
-        print("  observe-cli dashboard export [id1 id2 ...] [--json]  - Export dashboards to ndjson")
-        print("  observe-cli dashboard import <file.ndjson>           - Import dashboards from ndjson")
-        print("  observe-cli dashboard delete <id>                    - Delete a dashboard")
+        print("  starsearch-cli dashboard list                           - List all dashboards")
+        print("  starsearch-cli dashboard export [id1 id2 ...] [--json]  - Export dashboards to ndjson")
+        print("  starsearch-cli dashboard import <file.ndjson>           - Import dashboards from ndjson")
+        print("  starsearch-cli dashboard delete <id>                    - Delete a dashboard")
         print("")
-        print("  observe-cli visualization list                       - List all visualizations")
-        print("  observe-cli visualization export [id1 id2 ...] [--json] - Export visualizations to ndjson")
-        print("  observe-cli visualization import <file.ndjson>       - Import visualizations from ndjson")
-        print("  observe-cli visualization delete <id>                - Delete a visualization")
+        print("  starsearch-cli visualization list                       - List all visualizations")
+        print("  starsearch-cli visualization export [id1 id2 ...] [--json] - Export visualizations to ndjson")
+        print("  starsearch-cli visualization import <file.ndjson>       - Import visualizations from ndjson")
+        print("  starsearch-cli visualization delete <id>                - Delete a visualization")
         print("")
-        print("  observe-cli search list                              - List all saved searches")
-        print("  observe-cli search export [id1 id2 ...] [--json]     - Export searches to ndjson")
-        print("  observe-cli search import <file.ndjson>              - Import searches from ndjson")
-        print("  observe-cli search delete <id>                       - Delete a search")
+        print("  starsearch-cli search list                              - List all saved searches")
+        print("  starsearch-cli search export [id1 id2 ...] [--json]     - Export searches to ndjson")
+        print("  starsearch-cli search import <file.ndjson>              - Import searches from ndjson")
+        print("  starsearch-cli search delete <id>                       - Delete a search")
         print("\nOther Commands:")
-        print("  observe-cli ilm info [--all]                         - Show ILM policy info for indices")
-        print("  observe-cli ilm <policy> set delete-after <days>     - Set delete phase for a policy")
-        print("  observe-cli ilm <policy> set warm-after <days>       - Set warm phase for a policy")
-        print("  observe-cli ilm <policy> set cold-after <days>       - Set cold phase for a policy")
-        print("  observe-cli ilm <policy> set rollover <size> <docs>  - Set rollover thresholds")
-        print("  observe-cli index delete <index-name>                - Delete an index")
-        print("  observe-cli index-pattern list                       - List all index patterns")
-        print("  observe-cli index-pattern delete <pattern-id>        - Delete an index pattern")
+        print("  starsearch-cli ilm info [--all]                         - Show ILM policy info for indices")
+        print("  starsearch-cli ilm <policy> set delete-after <days>     - Set delete phase for a policy")
+        print("  starsearch-cli ilm <policy> set warm-after <days>       - Set warm phase for a policy")
+        print("  starsearch-cli ilm <policy> set cold-after <days>       - Set cold phase for a policy")
+        print("  starsearch-cli ilm <policy> set rollover <size> <docs>  - Set rollover thresholds")
+        print("  starsearch-cli index delete <index-name>                - Delete an index")
+        print("  starsearch-cli index-pattern list                       - List all index patterns")
+        print("  starsearch-cli index-pattern delete <pattern-id>        - Delete an index pattern")
         sys.exit(0 if len(sys.argv) > 1 else 1)
     
     target = None
@@ -315,7 +315,7 @@ def main():
         
         if phase_arg == "rollover":
             if len(args) < 6:
-                print("Usage: observe-cli ilm <policy> set rollover <max_size> <max_docs>")
+                print("Usage: starsearch-cli ilm <policy> set rollover <max_size> <max_docs>")
                 print("  max_size: e.g., '50gb', '10gb'")
                 print("  max_docs: e.g., '150000000' or 'none'")
                 sys.exit(1)
@@ -330,7 +330,7 @@ def main():
             print("Error: phase must be delete-after, warm-after, cold-after, or rollover")
             sys.exit(1)
         if len(args) < 5:
-            print(f"Usage: observe-cli ilm <policy> set {phase_arg} <days>")
+            print(f"Usage: starsearch-cli ilm <policy> set {phase_arg} <days>")
             sys.exit(1)
         policy_name = args[1]
         try:
@@ -367,7 +367,7 @@ def main():
             return
         elif args[1] == "delete":
             if len(args) < 3:
-                print("Usage: observe-cli index-pattern delete <pattern-id>")
+                print("Usage: starsearch-cli index-pattern delete <pattern-id>")
                 sys.exit(1)
             pattern_id = args[2]
             result = functions.delete_index_pattern(cfg, pattern_id, target)

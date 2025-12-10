@@ -66,13 +66,13 @@ Execute queries directly against the cluster:
 
 ```bash
 # Use default server (first in config)
-observe-cli _cluster/health
+starsearch-cli _cluster/health
 
 # Target specific server
-observe-cli --target prod-os _cat/indices
+starsearch-cli --target prod-os _cat/indices
 
 # POST requests with JSON data
-observe-cli _search -d '{"query": {"match_all": {}}}'
+starsearch-cli _search -d '{"query": {"match_all": {}}}'
 ```
 
 ### Saved Object Management
@@ -81,25 +81,25 @@ Manage all saved objects (dashboards, visualizations, searches) at once:
 
 ```bash
 # List all saved objects
-observe-cli saved-object list
+starsearch-cli saved-object list
 
 # Export all saved objects to NDJSON
-observe-cli saved-object export > all-objects.ndjson
+starsearch-cli saved-object export > all-objects.ndjson
 
 # Export specific objects by ID
-observe-cli saved-object export obj-id1 obj-id2 > objects.ndjson
+starsearch-cli saved-object export obj-id1 obj-id2 > objects.ndjson
 
 # Export as JSON array instead of NDJSON
-observe-cli saved-object export --json > objects.json
+starsearch-cli saved-object export --json > objects.json
 
 # Export to individual files (one per object)
-observe-cli saved-object export --to-file
+starsearch-cli saved-object export --to-file
 
 # Export to individual JSON files
-observe-cli saved-object export --to-file --json
+starsearch-cli saved-object export --to-file --json
 
 # Import saved objects from NDJSON file
-observe-cli saved-object import objects.ndjson
+starsearch-cli saved-object import objects.ndjson
 ```
 
 ### Dashboard Management
@@ -108,28 +108,28 @@ Manage dashboards separately from other objects:
 
 ```bash
 # List all dashboards
-observe-cli dashboard list
+starsearch-cli dashboard list
 
 # Export specific dashboard(s) to NDJSON
-observe-cli dashboard export dashboard-id1 dashboard-id2 > dashboards.ndjson
+starsearch-cli dashboard export dashboard-id1 dashboard-id2 > dashboards.ndjson
 
 # Export all dashboards
-observe-cli dashboard export > all-dashboards.ndjson
+starsearch-cli dashboard export > all-dashboards.ndjson
 
 # Export as JSON array instead of NDJSON
-observe-cli dashboard export --json > dashboards.json
+starsearch-cli dashboard export --json > dashboards.json
 
 # Export to individual files (one per dashboard)
-observe-cli dashboard export --to-file
+starsearch-cli dashboard export --to-file
 
 # Export specific dashboards to individual JSON files
-observe-cli dashboard export dashboard-id1 dashboard-id2 --to-file --json
+starsearch-cli dashboard export dashboard-id1 dashboard-id2 --to-file --json
 
 # Import dashboards from NDJSON file
-observe-cli dashboard import dashboards.ndjson
+starsearch-cli dashboard import dashboards.ndjson
 
 # Delete a dashboard
-observe-cli dashboard delete dashboard-id
+starsearch-cli dashboard delete dashboard-id
 ```
 
 ### Visualization Management
@@ -138,25 +138,25 @@ Manage visualizations independently:
 
 ```bash
 # List all visualizations
-observe-cli visualization list
+starsearch-cli visualization list
 
 # Export specific visualization(s)
-observe-cli visualization export vis-id1 vis-id2 > visualizations.ndjson
+starsearch-cli visualization export vis-id1 vis-id2 > visualizations.ndjson
 
 # Export as JSON array instead of NDJSON
-observe-cli visualization export --json > visualizations.json
+starsearch-cli visualization export --json > visualizations.json
 
 # Export to individual files (one per visualization)
-observe-cli visualization export --to-file
+starsearch-cli visualization export --to-file
 
 # Export to individual JSON files
-observe-cli visualization export --to-file --json
+starsearch-cli visualization export --to-file --json
 
 # Import visualizations
-observe-cli visualization import visualizations.ndjson
+starsearch-cli visualization import visualizations.ndjson
 
 # Delete a visualization
-observe-cli visualization delete vis-id
+starsearch-cli visualization delete vis-id
 ```
 
 ### Saved Search Management
@@ -165,28 +165,28 @@ Manage saved searches:
 
 ```bash
 # List all saved searches
-observe-cli search list
+starsearch-cli search list
 
 # Export saved searches
-observe-cli search export > searches.ndjson
+starsearch-cli search export > searches.ndjson
 
 # Export as JSON array instead of NDJSON
-observe-cli search export --json > searches.json
+starsearch-cli search export --json > searches.json
 
 # Export specific search(es)
-observe-cli search export search-id1 search-id2 > searches.ndjson
+starsearch-cli search export search-id1 search-id2 > searches.ndjson
 
 # Export to individual files (one per search)
-observe-cli search export --to-file
+starsearch-cli search export --to-file
 
 # Export to individual JSON files
-observe-cli search export --to-file --json
+starsearch-cli search export --to-file --json
 
 # Import searches
-observe-cli search import searches.ndjson
+starsearch-cli search import searches.ndjson
 
 # Delete a saved search
-observe-cli search delete search-id
+starsearch-cli search delete search-id
 ```
 
 ### Index Lifecycle Management (ILM/ISM)
@@ -195,39 +195,39 @@ Configure lifecycle policies for index management:
 
 ```bash
 # Show ILM policy info for all indices
-observe-cli ilm info
+starsearch-cli ilm info
 
 # Show detailed policy info including all indices
-observe-cli ilm info --all
+starsearch-cli ilm info --all
 
 # Set delete phase (delete after N days)
-observe-cli ilm my-policy set delete-after 30
+starsearch-cli ilm my-policy set delete-after 30
 
 # Set warm phase (move to warm after N days)
-observe-cli ilm my-policy set warm-after 7
+starsearch-cli ilm my-policy set warm-after 7
 
 # Set cold phase (move to cold after N days)
-observe-cli ilm my-policy set cold-after 14
+starsearch-cli ilm my-policy set cold-after 14
 
 # Set rollover thresholds (size and document count)
-observe-cli ilm my-policy set rollover 50gb 1000000
+starsearch-cli ilm my-policy set rollover 50gb 1000000
 ```
 
 ### Index Operations
 
 ```bash
 # Delete an index
-observe-cli index delete my-index-name
+starsearch-cli index delete my-index-name
 ```
 
 ### Index Pattern Management
 
 ```bash
 # List all index patterns
-observe-cli index-pattern list
+starsearch-cli index-pattern list
 
 # Delete an index pattern
-observe-cli index-pattern delete pattern-id
+starsearch-cli index-pattern delete pattern-id
 ```
 
 ### Multi-Server Usage
@@ -236,21 +236,21 @@ Use the `--target` flag to specify which server to use:
 
 ```bash
 # Query production server
-observe-cli --target prod-os _cluster/health
+starsearch-cli --target prod-os _cluster/health
 
 # List dashboards on staging server
-observe-cli --target staging dashboard list
+starsearch-cli --target staging dashboard list
 
 # Export from one server and import to another
-observe-cli --target prod dashboard export dash-id > prod-dashboard.ndjson
-observe-cli --target staging dashboard import prod-dashboard.ndjson
+starsearch-cli --target prod dashboard export dash-id > prod-dashboard.ndjson
+starsearch-cli --target staging dashboard import prod-dashboard.ndjson
 ```
 
 ### Version Information
 
 ```bash
-observe-cli --version
-observe-cli -v
+starsearch-cli --version
+starsearch-cli -v
 ```
 
 ## Output Format
@@ -265,29 +265,29 @@ observe-cli -v
 ### Backup All Dashboards
 
 ```bash
-observe-cli --target prod dashboard export > backup-dashboards.ndjson
-observe-cli --target prod visualization export > backup-visualizations.ndjson
-observe-cli --target prod search export > backup-searches.ndjson
+starsearch-cli --target prod dashboard export > backup-dashboards.ndjson
+starsearch-cli --target prod visualization export > backup-visualizations.ndjson
+starsearch-cli --target prod search export > backup-searches.ndjson
 ```
 
 ### Migrate Dashboards Between Clusters
 
 ```bash
 # Export from production
-observe-cli --target prod dashboard export > dashboards.ndjson
+starsearch-cli --target prod dashboard export > dashboards.ndjson
 
 # Import to staging
-observe-cli --target staging dashboard import dashboards.ndjson
+starsearch-cli --target staging dashboard import dashboards.ndjson
 ```
 
 ### Clean Up Old Indices with ILM
 
 ```bash
 # Configure policy to delete indices after 90 days
-observe-cli --target prod ilm logs-policy set delete-after 90
+starsearch-cli --target prod ilm logs-policy set delete-after 90
 
 # Move to warm storage after 30 days
-observe-cli --target prod ilm logs-policy set warm-after 30
+starsearch-cli --target prod ilm logs-policy set warm-after 30
 ```
 
 ## API Support
@@ -313,7 +313,7 @@ source venv/bin/activate
 pip install -e .
 
 # Run tests
-observe-cli --version
+starsearch-cli --version
 ```
 
 ## License
