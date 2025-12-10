@@ -184,10 +184,25 @@ def main():
             return
         elif args[1] == "export":
             use_json = "--json" in args
-            obj_ids = [arg for arg in args[2:] if arg != "--json"] if len(args) > 2 else None
+            to_file = "--to-file" in args
+            obj_ids = [arg for arg in args[2:] if arg not in ["--json", "--to-file"]] if len(args) > 2 else None
             result = functions.export_saved_objects(cfg, target, obj_ids, obj_type=None)
             if isinstance(result, dict) and "error" in result:
                 print(json.dumps(result, indent=2))
+            elif to_file:
+                lines = [json.loads(line) for line in result.strip().split('\n') if line.strip()]
+                for line in lines:
+                    if '_index_pattern_map' in line:
+                        continue
+                    obj_id = line['id']
+                    ext = '.json' if use_json else '.ndjson'
+                    filename = f"{obj_id}{ext}"
+                    with open(filename, 'w') as f:
+                        if use_json:
+                            f.write(json.dumps(line, indent=2))
+                        else:
+                            f.write(json.dumps(line))
+                    print(f"Exported: {filename}")
             elif use_json:
                 lines = [json.loads(line) for line in result.strip().split('\n') if line.strip()]
                 print(json.dumps(lines, indent=2))
@@ -216,10 +231,25 @@ def main():
             return
         elif args[1] == "export":
             use_json = "--json" in args
-            obj_ids = [arg for arg in args[2:] if arg != "--json"] if len(args) > 2 else None
+            to_file = "--to-file" in args
+            obj_ids = [arg for arg in args[2:] if arg not in ["--json", "--to-file"]] if len(args) > 2 else None
             result = functions.export_saved_objects(cfg, target, obj_ids, obj_type="dashboard")
             if isinstance(result, dict) and "error" in result:
                 print(json.dumps(result, indent=2))
+            elif to_file:
+                lines = [json.loads(line) for line in result.strip().split('\n') if line.strip()]
+                for line in lines:
+                    if '_index_pattern_map' in line:
+                        continue
+                    obj_id = line['id']
+                    ext = '.json' if use_json else '.ndjson'
+                    filename = f"{obj_id}{ext}"
+                    with open(filename, 'w') as f:
+                        if use_json:
+                            f.write(json.dumps(line, indent=2))
+                        else:
+                            f.write(json.dumps(line))
+                    print(f"Exported: {filename}")
             elif use_json:
                 lines = [json.loads(line) for line in result.strip().split('\n') if line.strip()]
                 print(json.dumps(lines, indent=2))
@@ -256,10 +286,25 @@ def main():
             return
         elif args[1] == "export":
             use_json = "--json" in args
-            obj_ids = [arg for arg in args[2:] if arg != "--json"] if len(args) > 2 else None
+            to_file = "--to-file" in args
+            obj_ids = [arg for arg in args[2:] if arg not in ["--json", "--to-file"]] if len(args) > 2 else None
             result = functions.export_saved_objects(cfg, target, obj_ids, obj_type="visualization")
             if isinstance(result, dict) and "error" in result:
                 print(json.dumps(result, indent=2))
+            elif to_file:
+                lines = [json.loads(line) for line in result.strip().split('\n') if line.strip()]
+                for line in lines:
+                    if '_index_pattern_map' in line:
+                        continue
+                    obj_id = line['id']
+                    ext = '.json' if use_json else '.ndjson'
+                    filename = f"{obj_id}{ext}"
+                    with open(filename, 'w') as f:
+                        if use_json:
+                            f.write(json.dumps(line, indent=2))
+                        else:
+                            f.write(json.dumps(line))
+                    print(f"Exported: {filename}")
             elif use_json:
                 lines = [json.loads(line) for line in result.strip().split('\n') if line.strip()]
                 print(json.dumps(lines, indent=2))
@@ -296,10 +341,25 @@ def main():
             return
         elif args[1] == "export":
             use_json = "--json" in args
-            obj_ids = [arg for arg in args[2:] if arg != "--json"] if len(args) > 2 else None
+            to_file = "--to-file" in args
+            obj_ids = [arg for arg in args[2:] if arg not in ["--json", "--to-file"]] if len(args) > 2 else None
             result = functions.export_saved_objects(cfg, target, obj_ids, obj_type="search")
             if isinstance(result, dict) and "error" in result:
                 print(json.dumps(result, indent=2))
+            elif to_file:
+                lines = [json.loads(line) for line in result.strip().split('\n') if line.strip()]
+                for line in lines:
+                    if '_index_pattern_map' in line:
+                        continue
+                    obj_id = line['id']
+                    ext = '.json' if use_json else '.ndjson'
+                    filename = f"{obj_id}{ext}"
+                    with open(filename, 'w') as f:
+                        if use_json:
+                            f.write(json.dumps(line, indent=2))
+                        else:
+                            f.write(json.dumps(line))
+                    print(f"Exported: {filename}")
             elif use_json:
                 lines = [json.loads(line) for line in result.strip().split('\n') if line.strip()]
                 print(json.dumps(lines, indent=2))

@@ -90,6 +90,12 @@ observe-cli saved-object export obj-id1 obj-id2 > objects.ndjson
 # Export as JSON array instead of NDJSON
 observe-cli saved-object export --json > objects.json
 
+# Export to individual files (one per object)
+observe-cli saved-object export --to-file
+
+# Export to individual JSON files
+observe-cli saved-object export --to-file --json
+
 # Import saved objects from NDJSON file
 observe-cli saved-object import objects.ndjson
 ```
@@ -111,6 +117,12 @@ observe-cli dashboard export > all-dashboards.ndjson
 # Export as JSON array instead of NDJSON
 observe-cli dashboard export --json > dashboards.json
 
+# Export to individual files (one per dashboard)
+observe-cli dashboard export --to-file
+
+# Export specific dashboards to individual JSON files
+observe-cli dashboard export dashboard-id1 dashboard-id2 --to-file --json
+
 # Import dashboards from NDJSON file
 observe-cli dashboard import dashboards.ndjson
 
@@ -131,6 +143,12 @@ observe-cli visualization export vis-id1 vis-id2 > visualizations.ndjson
 
 # Export as JSON array instead of NDJSON
 observe-cli visualization export --json > visualizations.json
+
+# Export to individual files (one per visualization)
+observe-cli visualization export --to-file
+
+# Export to individual JSON files
+observe-cli visualization export --to-file --json
 
 # Import visualizations
 observe-cli visualization import visualizations.ndjson
@@ -155,6 +173,12 @@ observe-cli search export --json > searches.json
 
 # Export specific search(es)
 observe-cli search export search-id1 search-id2 > searches.ndjson
+
+# Export to individual files (one per search)
+observe-cli search export --to-file
+
+# Export to individual JSON files
+observe-cli search export --to-file --json
 
 # Import searches
 observe-cli search import searches.ndjson
