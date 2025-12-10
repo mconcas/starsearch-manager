@@ -1,4 +1,4 @@
-# *search Observer
+# *search Manager
 
 Comprehensive CLI tool for managing Elasticsearch/OpenSearch clusters and OpenSearch Dashboards.
 
@@ -303,7 +303,7 @@ The appropriate API is selected automatically based on server configuration.
 ```bash
 # Clone the repository
 git clone <repo-url>
-cd starsearch-observer
+cd starsearch-manager
 
 # Create virtual environment
 python3 -m venv venv
@@ -315,7 +315,3 @@ pip install -e .
 # Run tests
 starsearch-cli --version
 ```
-
-## License
-
-MIT

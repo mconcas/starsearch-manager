@@ -3,7 +3,7 @@ requires = ["setuptools>=45", "setuptools-scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "starsearch-observer"
+name = "starsearch-manager"
 version = "0.1.0"
 dependencies = [
     "requests>=2.31.0",
@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [project.scripts]
-starsearch-cli = "starsearch_observer.cli:main"
+starsearch-cli = "starsearch_manager.cli:main"
 
 [tool.setuptools]
-packages = ["starsearch_observer"]
+packages = ["starsearch_manager"]
