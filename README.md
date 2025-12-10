@@ -5,6 +5,7 @@ Comprehensive CLI tool for managing Elasticsearch/OpenSearch clusters and OpenSe
 ## Features
 
 - 🔍 **Query Execution**: Run queries directly against Elasticsearch/OpenSearch clusters
+- 📦 **Saved Object Management**: Manage all saved objects (dashboards, visualizations, searches) collectively
 - 📊 **Dashboard Management**: List, export, import, and delete dashboards
 - 📈 **Visualization Management**: Manage visualizations independently
 - 🔎 **Saved Search Management**: Manage saved searches
@@ -70,6 +71,27 @@ observe-cli --target prod-os _cat/indices
 
 # POST requests with JSON data
 observe-cli _search -d '{"query": {"match_all": {}}}'
+```
+
+### Saved Object Management
+
+Manage all saved objects (dashboards, visualizations, searches) at once:
+
+```bash
+# List all saved objects
+observe-cli saved-object list
+
+# Export all saved objects to NDJSON
+observe-cli saved-object export > all-objects.ndjson
+
+# Export specific objects by ID
+observe-cli saved-object export obj-id1 obj-id2 > objects.ndjson
+
+# Export as JSON array instead of NDJSON
+observe-cli saved-object export --json > objects.json
+
+# Import saved objects from NDJSON file
+observe-cli saved-object import objects.ndjson
 ```
 
 ### Dashboard Management

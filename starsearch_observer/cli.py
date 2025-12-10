@@ -132,18 +132,22 @@ def main():
         print("       observe-cli -t|--target <name> <command> [args]")
         print("       observe-cli -v|--version")
         print("\nObject Management:")
+        print("  observe-cli saved-object list                        - List all saved objects")
+        print("  observe-cli saved-object export [id1 id2 ...] [--json] - Export all saved objects")
+        print("  observe-cli saved-object import <file.ndjson>        - Import saved objects from ndjson")
+        print("")
         print("  observe-cli dashboard list                           - List all dashboards")
-        print("  observe-cli dashboard export [id1 id2 ...]           - Export dashboards to ndjson")
+        print("  observe-cli dashboard export [id1 id2 ...] [--json]  - Export dashboards to ndjson")
         print("  observe-cli dashboard import <file.ndjson>           - Import dashboards from ndjson")
         print("  observe-cli dashboard delete <id>                    - Delete a dashboard")
         print("")
         print("  observe-cli visualization list                       - List all visualizations")
-        print("  observe-cli visualization export [id1 id2 ...]       - Export visualizations to ndjson")
+        print("  observe-cli visualization export [id1 id2 ...] [--json] - Export visualizations to ndjson")
         print("  observe-cli visualization import <file.ndjson>       - Import visualizations from ndjson")
         print("  observe-cli visualization delete <id>                - Delete a visualization")
         print("")
         print("  observe-cli search list                              - List all saved searches")
-        print("  observe-cli search export [id1 id2 ...]              - Export searches to ndjson")
+        print("  observe-cli search export [id1 id2 ...] [--json]     - Export searches to ndjson")
         print("  observe-cli search import <file.ndjson>              - Import searches from ndjson")
         print("  observe-cli search delete <id>                       - Delete a search")
         print("\nOther Commands:")
@@ -168,6 +172,38 @@ def main():
         args = args[2:]
     
     cfg = load_config()
+    
+    # Saved-object commands (type-agnostic)
+    if len(args) >= 2 and args[0] == "saved-object":
+        if args[1] == "list":
+            results = functions.list_dashboards(cfg, target, obj_type=None)
+            if isinstance(results, dict) and "error" in results:
+                print(json.dumps(results, indent=2))
+            else:
+                functions.print_saved_objects(results)
+            return
+        elif args[1] == "export":
+            use_json = "--json" in args
+            obj_ids = [arg for arg in args[2:] if arg != "--json"] if len(args) > 2 else None
+            result = functions.export_saved_objects(cfg, target, obj_ids, obj_type=None)
+            if isinstance(result, dict) and "error" in result:
+                print(json.dumps(result, indent=2))
+            elif use_json:
+                lines = [json.loads(line) for line in result.strip().split('\n') if line.strip()]
+                print(json.dumps(lines, indent=2))
+            else:
+                print(result)
+            return
+        elif args[1] == "import":
+            if len(args) < 3:
+                print("Usage: observe-cli saved-object import <file.ndjson>")
+                sys.exit(1)
+            filepath = args[2]
+            with open(filepath, 'r') as f:
+                ndjson_content = f.read()
+            result = functions.import_saved_objects(cfg, ndjson_content, target, obj_type=None)
+            print(json.dumps(result, indent=2))
+            return
     
     # Dashboard commands
     if len(args) >= 2 and args[0] == "dashboard":
