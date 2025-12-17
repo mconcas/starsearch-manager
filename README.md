@@ -4,15 +4,15 @@ Comprehensive CLI tool for managing Elasticsearch/OpenSearch clusters and OpenSe
 
 ## Features
 
-- 🔍 **Query Execution**: Run queries directly against Elasticsearch/OpenSearch clusters
-- 📦 **Saved Object Management**: Manage all saved objects (dashboards, visualizations, searches) collectively
-- 📊 **Dashboard Management**: List, export, import, and delete dashboards
-- 📈 **Visualization Management**: Manage visualizations independently
-- 🔎 **Saved Search Management**: Manage saved searches
-- 🗂️ **Index Lifecycle Management**: Configure ILM/ISM policies
-- 🔧 **Index Operations**: Delete indices and manage index patterns
-- 🔐 **Authentication**: Basic Auth support with configurable SSL verification
-- 🎯 **Multi-Server Support**: Manage multiple clusters from one config
+- **Query Execution**: Run queries directly against Elasticsearch/OpenSearch clusters
+- **Saved Object Management**: Manage all saved objects (dashboards, visualizations, searches) collectively
+- **Dashboard Management**: List, export, import, and delete dashboards
+- **Visualization Management**: Manage visualizations independently
+- **Saved Search Management**: Manage saved searches
+- **Index Lifecycle Management**: Configure ILM/ISM policies
+- **Index Operations**: Delete indices and manage index patterns
+- **Authentication**: Basic Auth support with configurable SSL verification
+- **Multi-Server Support**: Manage multiple clusters from one config
 
 ## Installation
 
@@ -59,6 +59,17 @@ Create `~/.starsearch/config.json` with your cluster details:
 - `base_path`: Path prefix for Dashboards API access, e.g., `/dashboards` (optional)
 
 ## Usage
+
+### Target Management
+
+View all configured servers/targets:
+
+```bash
+# List all available targets
+starsearch-cli target list
+```
+
+This shows all configured servers with their connection details, including which one is the default.
 
 ### Basic Queries
 

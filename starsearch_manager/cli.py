@@ -241,6 +241,8 @@ def main():
         print("Usage: starsearch-cli <command> [args] or starsearch-cli <endpoint>")
         print("       starsearch-cli -t|--target <name> <command> [args]")
         print("       starsearch-cli -v|--version")
+        print("\nTarget Management:")
+        print("  starsearch-cli target list                              - List all configured targets/servers")
         print("\nObject Management:")
         print("  starsearch-cli saved-object list                        - List all saved objects")
         print("  starsearch-cli saved-object export [id1 id2 ...] [--json] - Export all saved objects")
@@ -282,6 +284,30 @@ def main():
         args = args[2:]
     
     cfg = load_config()
+    
+    # Target commands
+    if len(args) >= 2 and args[0] == "target" and args[1] == "list":
+        servers = cfg.get("servers", [])
+        if not servers:
+            print("No targets configured in ~/.starsearch/config.json")
+            return
+        
+        print("\nConfigured targets:")
+        print("="*80)
+        for i, srv in enumerate(servers):
+            is_default = " (default)" if i == 0 else ""
+            print(f"\n{srv['name']}{is_default}")
+            print(f"  URL: {srv['protocol']}://{srv['host']}")
+            if srv.get('username'):
+                print(f"  Auth: {srv['username']}")
+            if srv.get('cluster_path'):
+                print(f"  Cluster Path: {srv['cluster_path']}")
+            if srv.get('base_path'):
+                print(f"  Base Path: {srv['base_path']}")
+            print(f"  SSL Verify: {srv.get('verify_ssl', True)}")
+        print("\n" + "="*80)
+        print(f"\nTotal: {len(servers)} target(s)")
+        return
     
     # Saved-object commands (type-agnostic)
     if len(args) >= 2 and args[0] == "saved-object":
